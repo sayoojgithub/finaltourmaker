@@ -209,6 +209,7 @@ export async function createClientByEntry(req, res) {
     const activeFOs = await FrontOfficer.find({
       company: entry.company,
       status: "Active",
+      isOnline:true,
     })
       .select("_id")
       .sort({ _id: 1 }) // deterministic order
@@ -217,7 +218,7 @@ export async function createClientByEntry(req, res) {
     if (activeFOs.length === 0) {
       // 409 Conflict makes sense: current org state prevents creating this resource
       return res.status(409).json({
-        message: "No active front officer found — inform Marketing Manager.",
+        message: "No active front officer found — inform FrontOffice Manager.",
         code: "NO_ACTIVE_FRONTOFFICER",
       });
     }

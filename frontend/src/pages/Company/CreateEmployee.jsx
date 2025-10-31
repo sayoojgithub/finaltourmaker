@@ -198,6 +198,16 @@ const handleSubmit = async () => {
     setFormData(updatedFormData); // update in state too
     return;
   }
+   if (
+    updatedFormData.department === "frontofficermanager" &&
+    updatedFormData.type !== "Company"
+  ) {
+    toast.error("You can create frontofficermanager only for company");
+    updatedFormData.branch = "";
+    updatedFormData.franchisee = "";
+    setFormData(updatedFormData); // update in state too
+    return;
+  }
 
   if (updatedFormData.type === "Branch") {
     if (!updatedFormData.branch) {
@@ -377,13 +387,14 @@ const handleSendOtp = async () => {
           >
             <option value="">Select Department</option>
             <option value="digitalmarketer">Digital Marketer</option>
+            <option value="creativestaff">Creative Staff</option>
             <option value="entry">Entry</option>
             <option value="frontofficer">Front Officer</option>
             <option value="executive">Executive</option>
             <option value="purchaser">Purchaser</option>
             <option value="salesmanager">Sales Manager</option>
             <option value="marketingmanager">Marketing Manager</option>
-            <option value="creativestaff">Creative Staff</option>
+            <option value="frontofficermanager">Front Officer Manager</option>
           </select>
 
           {/* Branch Dropdown */}

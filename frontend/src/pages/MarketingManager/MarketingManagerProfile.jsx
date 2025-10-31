@@ -9,6 +9,7 @@ import CreativeStaffWorkManagement from "./CreativeStaffWorkManagement";
 import DigitalMarketerWorkAnalysis from "./DigitalMarketerWorkAnalysis";
 import AllRequestManagement from "./AllRequestManagement";
 import AllAssignedTaskManagement from "./AllAssignedTaskManagement";
+
 // const tabData = [
 //   { label: "Ads Management" },
 //   { label: "Ad Requests" },
@@ -25,7 +26,8 @@ const tabData = [
   { label: "All Request Management"},
   { label: "Creative Staff Work Management"},
   { label: "Digital Marketer Work Analysis"},
-  { label:"Assign My Own Tasks"}
+  { label:"Assign My Own Tasks"},
+ 
 ]
 
 export default function MarketingManagerProfile() {
@@ -107,7 +109,7 @@ const renderTabContent = () => {
           {/* <span className="hidden sm:inline">Menu</span> */}
         </button>
 
-        <h2 className="text-xl md:text-2xl font-semibold text-[#222] truncate">
+        <h2 className="text-xl md:text-3xl font-extrabold font-[Poppins] text-[#6b4fe0] tracking-tight drop-shadow-sm">
           {activeLabel}
         </h2>
 

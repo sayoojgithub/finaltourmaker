@@ -94,7 +94,7 @@ export default function DigitalMarketerLeadTaskAnalysis() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-[#222]">Digital Marketer — Lead Task Analysis</h2>
+      {/* <h2 className="text-xl font-semibold text-[#222]">Digital Marketer — Lead Task Analysis</h2> */}
 
       {/* Filters */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">

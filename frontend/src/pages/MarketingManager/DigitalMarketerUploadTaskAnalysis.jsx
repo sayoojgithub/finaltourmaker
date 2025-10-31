@@ -89,7 +89,7 @@ export default function DigitalMarketerUploadTaskAnalysis() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-[#222]">Digital Marketer — Upload Task Analysis</h2>
+      {/* <h2 className="text-xl font-semibold text-[#222]">Digital Marketer — Upload Task Analysis</h2> */}
 
       {/* Filters */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

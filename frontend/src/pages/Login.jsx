@@ -47,6 +47,8 @@ const Login = () => {
         navigate("/entryProfile")
       } else if(role ==="frontofficer"){
         navigate("/frontOfficerProfile")
+      } else if(role ==="frontofficermanager"){
+        navigate("/frontOfficerManagerProfile")
       }else {
         Swal.fire({
           title: "Error",

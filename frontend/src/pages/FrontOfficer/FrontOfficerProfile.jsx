@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import { Menu, X, ChevronRight } from "lucide-react";
 import ClientsToCreate from "./ClientsToCreate";
 import CreateClient from "./CreateClient";
+import SearchCreatedClients from "./SearchCreatedClients";
+import UpdateClient from "./UpdateClient";
+import Report from "./Report";
 
 const tabData = [
   { label: "Clients To Create" },
@@ -17,9 +20,18 @@ export default function FrontOfficerProfile() {
   // NEW: controls whether we’re in “hidden” Create view
   const [inCreate, setInCreate] = useState(false);
 
-  const activeLabel = inCreate
-    ? "Create Client"
-    : (tabData[activeTab]?.label ?? "");
+  const [inUpdate, setInUpdate] = useState(false);
+  const [updateClientId, setUpdateClientId] = useState(null);
+
+  // const activeLabel = inCreate
+  //   ? "Create Client"
+  //   : (tabData[activeTab]?.label ?? "");
+   const activeLabel =
+    inCreate
+      ? "Create Client"
+      : inUpdate
+      ? "Update Client"
+      : (tabData[activeTab]?.label ?? "");
 
   const toggleMenu = () => setMenuOpen((v) => !v);
   const closeMenu = () => setMenuOpen(false);
@@ -42,12 +54,51 @@ export default function FrontOfficerProfile() {
   };
 
   // When user clicks ＋ on a row
-  const handleCreateFromRow = (row) => {
+
+  // const handleCreateFromRow = (row) => {
+  //   setPrefillClient(row);
+  //   setInCreate(true);        // jump to hidden Create view
+  //   closeMenu();
+  // };
+   const handleCreateFromRow = (row) => {
     setPrefillClient(row);
-    setInCreate(true);        // jump to hidden Create view
-    closeMenu();
+    setInCreate(true);
+    setInUpdate(false);
+    setActiveTab(0);
+    setMenuOpen(false);
+  };
+   const handleOpenUpdate = (clientId) => {
+    setUpdateClientId(clientId);
+    setInUpdate(true);
+    setInCreate(false);
+    setMenuOpen(false);
   };
 
+  // const renderTabContent = () => {
+  //   if (inCreate) {
+  //     return (
+  //       <CreateClient
+  //         prefill={prefillClient}
+  //         onCancel={() => {
+  //           setInCreate(false);
+  //           setActiveTab(0); // go back to Clients To Create
+  //         }}
+  //       />
+  //     );
+  //   }
+  //   switch (activeTab) {
+  //     case 0:
+  //       return <ClientsToCreate onCreate={handleCreateFromRow} />;
+  //     case 1:
+  //       // TODO: return your Search Created Clients component
+  //       return null;
+  //     case 2:
+  //       // TODO: return your Download Report component
+  //       return null;
+  //     default:
+  //       return null;
+  //   }
+  // };
   const renderTabContent = () => {
     if (inCreate) {
       return (
@@ -55,7 +106,19 @@ export default function FrontOfficerProfile() {
           prefill={prefillClient}
           onCancel={() => {
             setInCreate(false);
-            setActiveTab(0); // go back to Clients To Create
+            setActiveTab(0);
+          }}
+        />
+      );
+    }
+    if (inUpdate) {
+      return (
+        <UpdateClient
+          clientId={updateClientId}
+          onCancel={() => {
+            setInUpdate(false);
+            // Stay on Search tab for convenience
+            setActiveTab(1);
           }}
         />
       );
@@ -64,11 +127,9 @@ export default function FrontOfficerProfile() {
       case 0:
         return <ClientsToCreate onCreate={handleCreateFromRow} />;
       case 1:
-        // TODO: return your Search Created Clients component
-        return null;
+        return <SearchCreatedClients onOpenUpdate={handleOpenUpdate} />;
       case 2:
-        // TODO: return your Download Report component
-        return null;
+        return <Report/>;
       default:
         return null;
     }
@@ -89,7 +150,7 @@ export default function FrontOfficerProfile() {
           {menuOpen ? <X size={18} /> : <Menu size={18} />}
         </button>
 
-        <h2 className="text-xl md:text-2xl font-semibold text-[#222] truncate">
+<h2 className="text-xl md:text-3xl font-extrabold font-[Poppins] text-[#6b4fe0] tracking-tight drop-shadow-sm">
           {activeLabel}
         </h2>
 

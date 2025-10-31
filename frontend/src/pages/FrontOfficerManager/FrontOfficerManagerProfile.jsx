@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Menu, X, ChevronRight } from "lucide-react";
-import CreateClient from "./CreateClient";
-import SearchClient from "./SearchClient";
-import Report from "./Report";
+import FoStatusManagement from "./FoStatusManagement";
+import FoClientManagement from "./FoClientManagement";
 const tabData = [
-  { label: "Create Client" },
-  { label: "Search Client" },
-  { label: "Report"},
+ { label:"FrontOfficer Client Flow Management"},
+ { label:"FrontOfficer Client Management"}
 ];
 
-export default function EntryStaffProfile() {
+export default function FrontOfficerManagerfProfile() {
   const [activeTab, setActiveTab] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false); // one toggle for ALL viewports
 
@@ -38,11 +36,9 @@ export default function EntryStaffProfile() {
   const renderTabContent = () => {
     switch (activeTab) {
       case 0:
-        return <CreateClient/>;
+        return <FoStatusManagement/>;
       case 1:
-        return <SearchClient/>
-      case 2:
-        return <Report/>
+        return <FoClientManagement/>;
       default:
         return null;
     }

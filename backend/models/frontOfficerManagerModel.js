@@ -1,12 +1,12 @@
 import mongoose from 'mongoose';
 
-const frontOfficerSchema = new mongoose.Schema({
+const frontOfficerManagerSchema = new mongoose.Schema({
   name: { type: String, required: true },
   contactNumber: { type: String, required: true },
   email: { type: String, required: true },
   password: { type: String, required: true },
-  role: { type: String, default: 'frontofficer' },
-  department: { type: String, default: 'frontofficer' },
+  role: { type: String, default: 'frontofficermanager' },
+  department: { type: String, default: 'frontofficermanager' },
   company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true },
   type: {
     type: String,
@@ -18,15 +18,7 @@ const frontOfficerSchema = new mongoose.Schema({
   status: { type: String, enum: ['Active', 'Inactive'], default: 'Active' },
   profileImage: { type: String, default: "" },
   createdAt: { type: Date, default: Date.now },
-  
-  lastLoginAt: { type: Date },
-  lastActivityAt: { type: Date },
-  lastClientCreatedAt: { type: Date },
-  isOnline: { type: Boolean, default: false },
-  forceLoggedOutAt: { type: Date },
-  sessionVersion: { type: Number, default: 0 }, // bump to invalidate old JWTs
- 
 });
-frontOfficerSchema.index({ company: 1, status: 1, _id: 1 });
 
-export default mongoose.model('FrontOfficer', frontOfficerSchema);
+
+export default mongoose.model('FrontOfficerManager', frontOfficerManagerSchema);

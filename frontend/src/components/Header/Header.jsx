@@ -6,7 +6,7 @@ import { AuthContext } from '../../context/AuthContext';
 import API from '../../api';
 const Header =() => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const { role, userId, setRole, setUserId } = useContext(AuthContext);
+  const { role, userId, setRole, setUserId,} = useContext(AuthContext);
   const navigate = useNavigate();
   const navItems = [
     { name: "Home", path: "/home" },
@@ -50,6 +50,7 @@ const Header =() => {
       });
     }
   };
+
   return (
     <> 
       <div className="w-full flex justify-center px-2 pt-3 pb-1">

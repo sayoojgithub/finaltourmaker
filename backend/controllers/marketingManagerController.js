@@ -16,6 +16,8 @@ import GroupTour from "../models/groupTourModel.js";
 import FixedTour from "../models/fixedTourModel.js";
 import LeadAssignment from "../models/LeadAssignmentModel.js";
 import UploadAssignment from "../models/uploadAssignmentModel.js";
+import FrontOfficer from "../models/frontOfficerModel.js";
+import ClientByEntry from "../models/clientByEntryModel.js";
 
 export async function listCompanyDigitalMarketers(req, res) {
   try {
@@ -4106,4 +4108,13 @@ export async function rejectCompanyCreativeUploadAssignment(req, res) {
     return res.status(500).json({ message: "Internal server error" });
   }
 }
+
+
+
+
+
+
+
+
+
 

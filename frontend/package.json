@@ -12,6 +12,8 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.1.11",
     "axios": "^1.10.0",
+    "framer-motion": "^12.23.24",
+    "js-cookie": "^3.0.5",
     "lucide-react": "^0.523.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
@@ -21,7 +23,8 @@
     "react-spinners": "^0.17.0",
     "react-toastify": "^11.0.5",
     "recharts": "^3.0.2",
-    "sweetalert2": "^11.22.1",
+    "socket.io-client": "^4.8.1",
+    "sweetalert2": "^11.26.3",
     "swiper": "^11.2.8",
     "tailwindcss": "^4.1.11"
   },

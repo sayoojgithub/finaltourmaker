@@ -651,7 +651,7 @@ const computedCampaignName =
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-[#222]">Lead Requests — Marketing</h2>
+      {/* <h2 className="text-xl font-semibold text-[#222]">Lead Requests — Marketing</h2> */}
 
       {/* ---------- INLINE DECISION PANEL ---------- */}
       {openId && (

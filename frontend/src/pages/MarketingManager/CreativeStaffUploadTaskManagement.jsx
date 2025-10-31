@@ -165,7 +165,7 @@ export default function CreativeStaffUploadTaskManagement() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-[#222]">Creative Staff — Upload Tasks (Company-wide)</h2>
+      {/* <h2 className="text-xl font-semibold text-[#222]">Creative Staff — Upload Tasks (Company-wide)</h2> */}
 
       {/* ---------- INLINE PANEL ---------- */}
       {openId && (

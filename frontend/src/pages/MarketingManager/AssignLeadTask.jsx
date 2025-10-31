@@ -475,7 +475,7 @@ export default function AssignLeadTask() {
 
   return (
     <div className="space-y-8">
-      <h2 className="text-xl font-semibold text-[#222]">Assign Lead Task</h2>
+      {/* <h2 className="text-xl font-semibold text-[#222]">Assign Lead Task</h2> */}
 
       <form className="space-y-6" onSubmit={onSubmit} autoComplete="off">
         {/* Row 0: Country / State */}

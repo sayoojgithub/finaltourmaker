@@ -18,6 +18,7 @@ const counterSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  clientSequence: { type: Number, default: 0 },
 });
 
 export default mongoose.model("Counter", counterSchema);

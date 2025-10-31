@@ -293,7 +293,7 @@ import React, { useEffect, useState } from "react";
 import API from "../../api";
 import { toast } from "react-toastify";
 
-export default function ClientsToCreate({ onCreate }) {  // ✅ accept prop
+export default function ClientsToCreate({ onCreate }) {
   const [rows, setRows] = useState([]);
   const [loadingTable, setLoadingTable] = useState(false);
 
@@ -301,13 +301,13 @@ export default function ClientsToCreate({ onCreate }) {  // ✅ accept prop
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
-  // Filters …
+  // Filters
   const [filterMobile, setFilterMobile] = useState("");
   const [filterDestination, setFilterDestination] = useState("");
   const [filterDateFrom, setFilterDateFrom] = useState("");
   const [filterDateTo, setFilterDateTo] = useState("");
 
-  // Debounce states …
+  // Debounce mirrors
   const [debounceMobile, setDebounceMobile] = useState(filterMobile);
   const [debounceDestination, setDebounceDestination] = useState(filterDestination);
   const [debounceDateFrom, setDebounceDateFrom] = useState(filterDateFrom);
@@ -363,11 +363,13 @@ export default function ClientsToCreate({ onCreate }) {  // ✅ accept prop
     }
   };
 
-  // Initial + reactive loads (unchanged) …
+  // Initial load
   useEffect(() => {
     fetchRows(1, { mobileQ: "", destinationQ: "", dateFromQ: "", dateToQ: "" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Debounce timers
   useEffect(() => {
     const t = setTimeout(() => setDebounceMobile(filterMobile), 300);
     return () => clearTimeout(t);
@@ -384,6 +386,8 @@ export default function ClientsToCreate({ onCreate }) {  // ✅ accept prop
     const t = setTimeout(() => setDebounceDateTo(filterDateTo), 150);
     return () => clearTimeout(t);
   }, [filterDateTo]);
+
+  // Reactive fetch on debounced values
   useEffect(() => {
     fetchRows(1, {
       mobileQ: debounceMobile,
@@ -397,15 +401,102 @@ export default function ClientsToCreate({ onCreate }) {  // ✅ accept prop
   const handlePrev = () => page > 1 && fetchRows(page - 1);
   const handleNext = () => page < totalPages && fetchRows(page + 1);
 
-  // ✅ When user clicks "+", send the full doc upwards
   const handleCreateFromClient = (client) => {
     if (onCreate) return onCreate(client);
     toast.info(`Prepare to create from ${client.name || client.mobileNumber}`);
   };
 
+  const resetFilters = () => {
+    setFilterMobile("");
+    setFilterDestination("");
+    setFilterDateFrom("");
+    setFilterDateTo("");
+  };
+
   return (
     <div className="space-y-6">
-      {/* Filters … (unchanged) */}
+      {/* Filters */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-200">
+        <div className="col-span-1">
+          <label className="block text-xs font-semibold text-gray-600 mb-1">
+            Mobile
+          </label>
+          <input
+            type="text"
+            inputMode="numeric"
+            placeholder="Start with digits"
+            value={filterMobile}
+            onChange={(e) => setFilterMobile(e.target.value)}
+            className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#8570EE]"
+          />
+        </div>
+
+        <div className="col-span-1 md:col-span-2">
+          <label className="block text-xs font-semibold text-gray-600 mb-1">
+            Destination
+          </label>
+          <input
+            type="text"
+            placeholder="Primary destination"
+            value={filterDestination}
+            onChange={(e) => setFilterDestination(e.target.value)}
+            className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#8570EE]"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-gray-600 mb-1">
+            From (Created)
+          </label>
+          <input
+            type="date"
+            value={filterDateFrom}
+            onChange={(e) => setFilterDateFrom(e.target.value)}
+            className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#8570EE]"
+          />
+        </div>
+
+        <div className="flex md:block items-end">
+          <div className="w-full">
+            <label className="block text-xs font-semibold text-gray-600 mb-1">
+              To (Created)
+            </label>
+            <input
+              type="date"
+              value={filterDateTo}
+              onChange={(e) => setFilterDateTo(e.target.value)}
+              className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#8570EE]"
+            />
+          </div>
+        </div>
+
+        {/* <div className="md:col-span-5 flex items-center gap-2 justify-end">
+          <button
+            type="button"
+            onClick={() =>
+              fetchRows(1, {
+                mobileQ: filterMobile,
+                destinationQ: filterDestination,
+                dateFromQ: filterDateFrom,
+                dateToQ: filterDateTo,
+              })
+            }
+            className="rounded-full bg-[#8570EE] text-white px-4 py-2 font-semibold hover:opacity-90"
+          >
+            Apply
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              resetFilters();
+              fetchRows(1, { mobileQ: "", destinationQ: "", dateFromQ: "", dateToQ: "" });
+            }}
+            className="rounded-full border border-gray-300 px-4 py-2 font-semibold hover:bg-gray-50"
+          >
+            Reset
+          </button>
+        </div> */}
+      </div>
 
       {/* Table */}
       <div className="overflow-x-auto rounded-2xl border border-gray-200">
@@ -487,7 +578,7 @@ export default function ClientsToCreate({ onCreate }) {  // ✅ accept prop
         </table>
       </div>
 
-      {/* Pagination … (unchanged) */}
+      {/* Pagination */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-600">
           Showing page <span className="font-semibold">{page}</span> of{" "}
@@ -515,16 +606,6 @@ export default function ClientsToCreate({ onCreate }) {  // ✅ accept prop
   );
 }
 
-function Field({ label, required, children }) {
-  return (
-    <label className="block">
-      <span className="block text-sm font-medium text-[#222] mb-1">
-        {label} {required && <span className="text-red-500">*</span>}
-      </span>
-      {children}
-    </label>
-  );
-}
 function Th({ children, className = "" }) {
   return (
     <th

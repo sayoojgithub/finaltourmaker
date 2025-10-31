@@ -14,6 +14,7 @@ import MarketingManagerProfile from '../pages/MarketingManager/MarketingManagerP
 import CreativeStaffProfile from '../pages/CreativeStaff/CreativeStaffProfile'
 import EntryStaffProfile from '../pages/Entry/EntryStaffProfile'
 import FrontOfficerProfile from '../pages/FrontOfficer/FrontOfficerProfile'
+import FrontOfficerManagerfProfile from '../pages/FrontOfficerManager/FrontOfficerManagerProfile'
 
 
 import {Routes, Route} from "react-router-dom"
@@ -105,6 +106,14 @@ const Routers = () => {
         element={
           <ProtectedRoute allowedRoles={['frontofficer']}>
             <FrontOfficerProfile/>
+          </ProtectedRoute>
+        }
+      />
+       <Route
+        path='/frontOfficerManagerProfile'
+        element={
+          <ProtectedRoute allowedRoles={['frontofficermanager']}>
+            <FrontOfficerManagerfProfile/>
           </ProtectedRoute>
         }
       />

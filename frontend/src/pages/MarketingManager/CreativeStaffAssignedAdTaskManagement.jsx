@@ -178,7 +178,7 @@ export default function CreativeStaffAssignedAdTaskManagement() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-[#222]">Creative Staff — Assigned Ad Tasks (Company-wide)</h2>
+      {/* <h2 className="text-xl font-semibold text-[#222]">Creative Staff — Assigned Ad Tasks (Company-wide)</h2> */}
 
       {/* ---------- INLINE PANEL ---------- */}
       {openId && (

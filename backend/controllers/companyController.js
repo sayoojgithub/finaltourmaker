@@ -11,6 +11,7 @@ import SalesManager from "../models/salesManagerModel.js";
 import MarketingManager from "../models/marketingManagerModel.js";
 import CreativeStaff from "../models/creativeStaffModel.js";
 import Entry from "../models/entryModel.js";
+import FrontOfficerManager from "../models/frontOfficerManagerModel.js";
 import nodemailer from "nodemailer";
 import bcrypt from "bcryptjs";
 
@@ -679,6 +680,7 @@ export const listEmployees = async (req, res) => {
       salesManagers,
       creativeStaffs,
       entry,
+      frontOfficerManagers,
     ] = await Promise.all([
       FrontOfficer.find({ company: req.userId })
         .populate({ path: "branch", select: "branchName" }) // Use 'branchName'
@@ -696,6 +698,7 @@ export const listEmployees = async (req, res) => {
         .populate({ path: "franchisee", select: "franchiseeName" }),
       CreativeStaff.find({ company: req.userId }),
       Entry.find({company: req.userId }),
+      FrontOfficerManager.find({company: req.userId}),
     ]);
 
     const employees = [
@@ -707,6 +710,7 @@ export const listEmployees = async (req, res) => {
       ...salesManagers,
       ...creativeStaffs,
       ...entry,
+      ...frontOfficerManagers,
     ];
     res.json(employees);
   } catch (err) {
@@ -769,7 +773,10 @@ export const createEmployee = async (req, res) => {
     } else if (department === "entry") {
       baseData.type = "Company";
       newEmployee = await new Entry(baseData).save();
-    } else {
+    } else if (department ==="frontofficermanager"){
+      baseData.type = "Company";
+      newEmployee = await new FrontOfficerManager(baseData).save();
+    }else {
       // fallback for future departments (optional)
       newEmployee = await new Employee(baseData).save();
     }

@@ -69,7 +69,8 @@ import {
   rejectCompanyCreativeUploadAssignment,
   listCompanyDmAdTasks,
   listCompanyDmLeadTasks,
-  listCompanyDmUploadAssignments
+  listCompanyDmUploadAssignments,
+
   
 
 } from "../controllers/marketingManagerController.js";
@@ -178,5 +179,6 @@ router.get( "/creative-upload-assignments/:id",         verifyUser, getCompanyCr
 router.post("/creative-upload-assignments/:id/approve", verifyUser, approveCompanyCreativeUploadAssignment);
 router.post("/creative-upload-assignments/:id/reject",  verifyUser, rejectCompanyCreativeUploadAssignment);
 //adtask analysis of digital markters//
+
 
 export default router;

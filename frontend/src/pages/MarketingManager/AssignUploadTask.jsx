@@ -123,7 +123,7 @@ const AssignUploadTask = () => {
 
   return (
     <div className="space-y-8">
-      <h2 className="text-xl font-semibold text-[#222]">Assign Upload Task</h2>
+      {/* <h2 className="text-xl font-semibold text-[#222]">Assign Upload Task</h2> */}
 
       <form className="space-y-6" onSubmit={onSubmit} autoComplete="off">
         {/* Row 1: Category / Filename / Publishing Date */}
