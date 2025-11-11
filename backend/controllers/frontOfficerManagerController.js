@@ -17,7 +17,7 @@ export async function listFrontOfficersByCompany(req, res) {
 
     const [items, total] = await Promise.all([
       FrontOfficer.find(filter)
-        .select("name contactNumber email status createdAt")
+        .select("name contactNumber email status isOnline createdAt")
         .sort({ createdAt: -1, _id: 1 })
         .skip(skip)
         .limit(limit)
@@ -32,6 +32,7 @@ export async function listFrontOfficersByCompany(req, res) {
         contactNumber: it.contactNumber,
         email: it.email,
         status: it.status,
+        isOnline: !!it.isOnline,
       })),
       page,
       limit,

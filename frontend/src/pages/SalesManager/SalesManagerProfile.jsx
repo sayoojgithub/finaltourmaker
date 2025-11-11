@@ -5,6 +5,8 @@ import { Menu, X, ChevronRight } from "lucide-react";
 // import UploadRequest from "./UploadRequest";
 // import DailyTaskRequest from "./DailyTaskRequest";
 import AllRequestManagement from "./AllRequestManagement";
+import ExecutiveList from "./ExecutiveList";
+import ExecutiveDetails from "./ExecutiveDetails";
 // const tabData = [
 //   { label: "Ad Request" },
 //   { label: "Lead Request" },
@@ -14,13 +16,14 @@ import AllRequestManagement from "./AllRequestManagement";
 
 // ];
 const tabData = [
-  {label: "My Requests"}
+  {label: "My Requests"},
+  {label:"Executive Management"}
 ]
 
 export default function SalesManagerProfile() {
   const [activeTab, setActiveTab] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false); // one toggle for ALL viewports
-
+  const [selectedExecutiveId, setSelectedExecutiveId] = useState(null);
   const activeLabel = tabData[activeTab]?.label ?? "";
 
   const toggleMenu = () => setMenuOpen((v) => !v);
@@ -40,6 +43,7 @@ export default function SalesManagerProfile() {
 
   const handleSelect = (idx) => {
     setActiveTab(idx);
+    if (idx !== 1) setSelectedExecutiveId(null);
     closeMenu();
   };
 
@@ -63,6 +67,16 @@ export default function SalesManagerProfile() {
     switch (activeTab) {
       case 0:
         return <AllRequestManagement/>
+      case 1:
+       // List first; when pencil is clicked, show Details
+       return selectedExecutiveId ? (
+         <ExecutiveDetails
+           id={selectedExecutiveId}
+           onBack={() => setSelectedExecutiveId(null)}
+        />
+       ) : (
+         <ExecutiveList onOpen={(id) => setSelectedExecutiveId(id)} />
+       );
       default:
         return null;
     }
@@ -85,7 +99,7 @@ export default function SalesManagerProfile() {
           {/* <span className="hidden sm:inline">Menu</span> */}
         </button>
 
-        <h2 className="text-xl md:text-2xl font-semibold text-[#222] truncate">
+        <h2 className="text-xl md:text-3xl font-extrabold font-[Poppins] text-[#6b4fe0] tracking-tight drop-shadow-sm">
           {activeLabel}
         </h2>
 

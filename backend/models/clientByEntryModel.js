@@ -64,8 +64,11 @@ const ClientByEntrySchema = new mongoose.Schema(
 );
 
 
-ClientByEntrySchema.index({ entryId: 1, createdAt: -1 });
-ClientByEntrySchema.index({ entryId: 1, mobileNumber: 1, createdAt: -1 });
-ClientByEntrySchema.index({ entryId: 1, "primaryDestinationName.value": 1, createdAt: -1 });
+ClientByEntrySchema.index({ entryId: 1, createdAt: -1 });                   // base sort/pagination
+ClientByEntrySchema.index({ entryId: 1, name: 1 });                          // prefix search on name
+ClientByEntrySchema.index({ entryId: 1, mobileNumber: 1 });                  // prefix search on mobile
+ClientByEntrySchema.index({ entryId: 1, "primaryDestinationName.value": 1 }); // prefix search on destination
+
+ClientByEntrySchema.index({ entryId: 1, createdAtByEntry: 1 })
 
 export default mongoose.model("ClientByEntry", ClientByEntrySchema);

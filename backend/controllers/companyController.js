@@ -14,6 +14,7 @@ import Entry from "../models/entryModel.js";
 import FrontOfficerManager from "../models/frontOfficerManagerModel.js";
 import nodemailer from "nodemailer";
 import bcrypt from "bcryptjs";
+import mongoose from "mongoose";
 
 export const sendOtpToEmail = async (req, res) => {
   const { email } = req.body;
@@ -22,14 +23,25 @@ export const sendOtpToEmail = async (req, res) => {
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
 
-  try {
+   try {
+    // const transporter = nodemailer.createTransport({
+    //   service: "gmail",
+    //   auth: {
+    //     user: process.env.EMAIL_USER,
+    //     pass: process.env.EMAIL_PASS,
+    //   },
+    // });
     const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true, // SSL
+  auth: {
+    user: process.env.EMAIL_USER, // full gmail address
+    pass: process.env.EMAIL_PASS, // 16-char app password
+  },
+});
+ 
+
 
     const mailOptions = {
       from: `"Tourmaker OTP" <${process.env.EMAIL_USER}>`,
@@ -840,3 +852,306 @@ export const updateEmployee = async (req, res) => {
     res.status(500).json({ error: "Failed to update employee" });
   }
 };
+
+//pincode management//
+function toInt(v, d) {
+  const n = parseInt(v, 10);
+  return Number.isFinite(n) && n > 0 ? n : d;
+}
+
+
+
+export async function listCompanyBranches(req, res) {
+  try {
+    if (!req.userId) return res.status(401).json({ message: "Unauthorized" });
+
+    const page = toInt(req.query.page, 1);
+    const limit = Math.min(toInt(req.query.limit, 2), 100);
+    const search = (req.query.search || "").toString().trim();
+
+    const query = {
+      company: req.userId, // if your "company" is different from "userId", adjust here
+    };
+    if (search) {
+      query.branchName = { $regex: search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" };
+    }
+
+    const [items, total] = await Promise.all([
+      Branch.find(query)
+        .select("branchName contactNumber email status assignedPincodes")
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit),
+      Branch.countDocuments(query),
+    ]);
+
+    res.json({
+      items,
+      page,
+      limit,
+      total,
+      pages: Math.ceil(total / limit),
+    });
+  } catch (e) {
+    res.status(500).json({ message: "Failed to list branches" });
+  }
+}
+
+export async function listCompanyFranchisees(req, res) {
+  try {
+    if (!req.userId) return res.status(401).json({ message: "Unauthorized" });
+
+    const page = toInt(req.query.page, 1);
+    const limit = Math.min(toInt(req.query.limit, 2), 100);
+    const search = (req.query.search || "").toString().trim();
+
+    const query = {
+      company: req.userId,
+    };
+    if (search) {
+      query.franchiseeName = { $regex: search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" };
+    }
+
+    const [items, total] = await Promise.all([
+      Franchisee.find(query)
+        .select("franchiseeName contactNumber email status assignedPincodes")
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit),
+      Franchisee.countDocuments(query),
+    ]);
+
+    res.json({
+      items,
+      page,
+      limit,
+      total,
+      pages: Math.ceil(total / limit),
+    });
+  } catch (e) {
+    res.status(500).json({ message: "Failed to list franchisees" });
+  }
+}
+
+// export async function getAssignedPincodes(req, res) {
+//   try {
+//     const { type, id } = req.params;
+//     //if (!mongoose.isValidObjectId(id)) return res.status(400).json({ message: "Invalid id" });
+//     let doc = null;
+//     if (type === "branch") {
+//       doc = await Branch.findOne({ _id: id, company: req.userId })
+//         .select("branchName assignedPincodes status");
+//     } else if (type === "franchisee") {
+//       doc = await Franchisee.findOne({ _id: id, company: req.userId })
+//         .select("franchiseeName assignedPincodes status");
+//     } else {
+//       return res.status(400).json({ message: "type must be branch or franchisee" });
+//     }
+//     if (!doc) return res.status(404).json({ message: "Not found" });
+//     res.json({
+//       name: type === "branch" ? doc.branchName : doc.franchiseeName,
+//       status: doc.status,
+//       assignedPincodes: doc.assignedPincodes || [],
+//     });
+//   } catch (e) {
+//     res.status(500).json({ message: "Failed to fetch pincodes" });
+//   }
+// }
+
+// export async function assignPincodes(req, res) {
+//   try {
+//     const { type, id } = req.params;
+//     //if (!mongoose.isValidObjectId(id)) return res.status(400).json({ message: "Invalid id" });
+//     const pincodes = normalizePincodes(req.body.pincodes);
+//     if (!pincodes.length) return res.status(400).json({ message: "No valid pincodes to assign" });
+
+//     let doc = null;
+//     if (type === "branch") {
+//       doc = await Branch.findOneAndUpdate(
+//         { _id: id, company: req.userId },
+//         { $addToSet: { assignedPincodes: { $each: pincodes } } },
+//         { new: true, projection: "branchName assignedPincodes" }
+//       );
+//     } else if (type === "franchisee") {
+//       doc = await Franchisee.findOneAndUpdate(
+//         { _id: id, company: req.userId },
+//         { $addToSet: { assignedPincodes: { $each: pincodes } } },
+//         { new: true, projection: "franchiseeName assignedPincodes" }
+//       );
+//     } else {
+//       return res.status(400).json({ message: "type must be branch or franchisee" });
+//     }
+//     if (!doc) return res.status(404).json({ message: "Not found" });
+
+//     res.json({ assignedPincodes: doc.assignedPincodes || [] });
+//   } catch (e) {
+//     res.status(500).json({ message: "Failed to assign pincodes" });
+//   }
+// }
+
+// export async function removePincodes(req, res) {
+//   try {
+//     const { type, id } = req.params;
+//     //if (!mongoose.isValidObjectId(id)) return res.status(400).json({ message: "Invalid id" });
+//     const pincodes = normalizePincodes(req.body.pincodes);
+//     if (!pincodes.length) return res.status(400).json({ message: "No valid pincodes to remove" });
+
+//     let doc = null;
+//     if (type === "branch") {
+//       doc = await Branch.findOneAndUpdate(
+//         { _id: id, company: req.userId },
+//         { $pull: { assignedPincodes: { $in: pincodes } } },
+//         { new: true, projection: "branchName assignedPincodes" }
+//       );
+//     } else if (type === "franchisee") {
+//       doc = await Franchisee.findOneAndUpdate(
+//         { _id: id, company: req.userId },
+//         { $pull: { assignedPincodes: { $in: pincodes } } },
+//         { new: true, projection: "franchiseeName assignedPincodes" }
+//       );
+//     } else {
+//       return res.status(400).json({ message: "type must be branch or franchisee" });
+//     }
+//     if (!doc) return res.status(404).json({ message: "Not found" });
+
+//     res.json({ assignedPincodes: doc.assignedPincodes || [] });
+//   } catch (e) {
+//     res.status(500).json({ message: "Failed to remove pincodes" });
+//   }
+// }
+const isObjId = (v) => mongoose.isValidObjectId(v);
+
+// Accept "673001, 673002" or ["673001", "673002"], return unique 6-digit only
+function normalizePincodesSix(input) {
+  const parts = Array.isArray(input)
+    ? input
+    : String(input || "").split(/[,\s]+/);
+  const uniq = Array.from(
+    new Set(parts.map(s => String(s || "").trim()).filter(Boolean))
+  );
+  return uniq.filter(p => /^\d{6}$/.test(p));
+}
+
+// Look for conflicts in BOTH collections for this company
+async function findConflicts(companyId, pincodes, exclude) {
+  const filter = { company: companyId, assignedPincodes: { $in: pincodes } };
+
+  const [branches, franchisees] = await Promise.all([
+    Branch.find(filter, "branchName assignedPincodes"),
+    Franchisee.find(filter, "franchiseeName assignedPincodes"),
+  ]);
+
+  const out = [];
+  for (const d of branches) {
+    if (!(exclude?.type === "branch" && String(d._id) === String(exclude?.id))) {
+      d.assignedPincodes
+        .filter(p => pincodes.includes(p))
+        .forEach(p => out.push({ pincode: p, type: "branch", name: d.branchName, id: d._id }));
+    }
+  }
+  for (const d of franchisees) {
+    if (!(exclude?.type === "franchisee" && String(d._id) === String(exclude?.id))) {
+      d.assignedPincodes
+        .filter(p => pincodes.includes(p))
+        .forEach(p => out.push({ pincode: p, type: "franchisee", name: d.franchiseeName, id: d._id }));
+    }
+  }
+  return out;
+}
+
+export async function getAssignedPincodes(req, res) {
+  try {
+    const { type, id } = req.params;
+    if (!["branch","franchisee"].includes(type)) {
+      return res.status(400).json({ message: "type must be branch or franchisee" });
+    }
+    if (!isObjId(id)) return res.status(400).json({ message: "Invalid id" });
+
+    const companyId = req.companyId || req.user?.companyId || req.userId;
+    if (!isObjId(companyId)) return res.status(401).json({ message: "Company context missing" });
+
+    const Model = type === "branch" ? Branch : Franchisee;
+    const doc = await Model.findOne({ _id: id, company: companyId })
+      .select(type === "branch" ? "branchName assignedPincodes status" : "franchiseeName assignedPincodes status");
+
+    if (!doc) return res.status(404).json({ message: "Not found" });
+
+    res.json({
+      name: type === "branch" ? doc.branchName : doc.franchiseeName,
+      status: doc.status,
+      assignedPincodes: doc.assignedPincodes || [],
+    });
+  } catch (e) {
+    console.error("getAssignedPincodes error:", e);
+    res.status(500).json({ message: "Failed to fetch pincodes" });
+  }
+}
+
+export async function assignPincodes(req, res) {
+  try {
+    const { type, id } = req.params;
+    if (!["branch","franchisee"].includes(type)) {
+      return res.status(400).json({ message: "type must be branch or franchisee" });
+    }
+    if (!isObjId(id)) return res.status(400).json({ message: "Invalid id" });
+
+    const companyId = req.companyId || req.user?.companyId || req.userId;
+    if (!isObjId(companyId)) return res.status(401).json({ message: "Company context missing" });
+
+    const pins = normalizePincodesSix(req.body.pincodes);
+    if (!pins.length) {
+      return res.status(400).json({ message: "Enter at least one 6-digit pincode" });
+    }
+
+    // Simple + efficient uniqueness check across both collections
+    const conflicts = await findConflicts(companyId, pins, { type, id });
+    if (conflicts.length) {
+      return res.status(409).json({
+        message: "Pincode(s) already assigned within company",
+        conflicts, // [{pincode, type, name, id}]
+      });
+    }
+
+    const Model = type === "branch" ? Branch : Franchisee;
+    const updated = await Model.findOneAndUpdate(
+      { _id: id, company: companyId },
+      { $addToSet: { assignedPincodes: { $each: pins } } },
+      { new: true, projection: "assignedPincodes" }
+    );
+    if (!updated) return res.status(404).json({ message: "Not found" });
+
+    return res.json({ assignedPincodes: updated.assignedPincodes || [] });
+  } catch (e) {
+    console.error("assignPincodes error:", e);
+    return res.status(500).json({ message: "Failed to assign pincodes" });
+  }
+}
+
+export async function removePincodes(req, res) {
+  try {
+    const { type, id } = req.params;
+    if (!["branch","franchisee"].includes(type)) {
+      return res.status(400).json({ message: "type must be branch or franchisee" });
+    }
+    if (!isObjId(id)) return res.status(400).json({ message: "Invalid id" });
+
+    const companyId = req.companyId || req.user?.companyId || req.userId;
+    if (!isObjId(companyId)) return res.status(401).json({ message: "Company context missing" });
+
+    const pins = normalizePincodesSix(req.body.pincodes);
+    if (!pins.length) return res.status(400).json({ message: "Enter valid 6-digit pincodes" });
+
+    const Model = type === "branch" ? Branch : Franchisee;
+    const updated = await Model.findOneAndUpdate(
+      { _id: id, company: companyId },
+      { $pull: { assignedPincodes: { $in: pins } } },
+      { new: true, projection: "assignedPincodes" }
+    );
+    if (!updated) return res.status(404).json({ message: "Not found" });
+
+    return res.json({ assignedPincodes: updated.assignedPincodes || [] });
+  } catch (e) {
+    console.error("removePincodes error:", e);
+    return res.status(500).json({ message: "Failed to remove pincodes" });
+  }
+}

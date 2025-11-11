@@ -117,10 +117,10 @@ const Profile = () => {
   };
 
   return (
-    <div className="w-full max-w-[100rem] bg-white rounded-3xl shadow-lg p-6 md:p-8 mx-auto mb-10">
+    <div className="w-full max-w-[100rem] bg-white rounded-3xl shadow-lg p-6 md:p-8 mx-auto mb-10 ">
       <form
         onSubmit={handleSubmit}
-        className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-[100rem] mx-auto"
+        className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-[100rem] mx-auto "
       >
         <input
           type="text"
@@ -128,7 +128,7 @@ const Profile = () => {
           value={formData.companyName}
           onChange={handleChange}
           placeholder="Company Name"
-          className="border rounded p-3"
+          className="border-[0.5px] border-gray-300 rounded p-3"
           disabled
         />
         <input
@@ -137,7 +137,7 @@ const Profile = () => {
           value={formData.ownerName}
           onChange={handleChange}
           placeholder="Owner's Name"
-          className="border rounded p-3"
+          className="border-[0.5px] border-gray-300 rounded p-3"
           disabled
         />
         <input
@@ -146,7 +146,7 @@ const Profile = () => {
           value={formData.email}
           onChange={handleChange}
           placeholder="Email ID"
-          className="border rounded p-3"
+          className="border-[0.5px] border-gray-300 rounded p-3"
           disabled
         />
         <input
@@ -155,7 +155,7 @@ const Profile = () => {
           value={formData.contactNumber}
           onChange={handleChange}
           placeholder="Phone Number"
-          className="border rounded p-3"
+          className="border-[0.5px] border-gray-300 rounded p-3"
           disabled
         />
         <input
@@ -164,7 +164,7 @@ const Profile = () => {
           value={formData.additionalNumber}
           onChange={handleChange}
           placeholder="Additional Number"
-          className="border rounded p-3"
+          className="border-[0.5px] border-gray-300 rounded p-3"
         />
         <input
           type="text"
@@ -172,7 +172,7 @@ const Profile = () => {
           value={formData.gstin}
           onChange={handleChange}
           placeholder="GSTIN"
-          className="border rounded p-3"
+          className="border-[0.5px] border-gray-300 rounded p-3"
         />
         <input
           type="text"
@@ -180,7 +180,7 @@ const Profile = () => {
           value={formData.buildingName}
           onChange={handleChange}
           placeholder="Building Name"
-          className="border rounded p-3"
+          className="border-[0.5px] border-gray-300 rounded p-3"
         />
         <input
           type="text"
@@ -188,7 +188,7 @@ const Profile = () => {
           value={formData.roadAreaStreet}
           onChange={handleChange}
           placeholder="Road name, Area, Street"
-          className="border rounded p-3"
+          className="border-[0.5px] border-gray-300 rounded p-3"
         />
         <input
           type="text"
@@ -196,7 +196,7 @@ const Profile = () => {
           value={formData.city}
           onChange={handleChange}
           placeholder="City"
-          className="border rounded p-3"
+          className="border-[0.5px] border-gray-300 rounded p-3"
           disabled
         />
         <input
@@ -205,7 +205,7 @@ const Profile = () => {
           value={formData.state}
           onChange={handleChange}
           placeholder="State"
-          className="border rounded p-3"
+          className="border-[0.5px] border-gray-300 rounded p-3"
           disabled
         />
         <input
@@ -214,7 +214,7 @@ const Profile = () => {
           value={formData.country}
           onChange={handleChange}
           placeholder="Country"
-          className="border rounded p-3"
+          className="border-[0.5px] border-gray-300 rounded p-3"
           disabled
         />
         <input
@@ -223,7 +223,7 @@ const Profile = () => {
           value={formData.pincode}
           onChange={handleChange}
           placeholder="Pin Code"
-          className="border rounded p-3"
+          className="border-[0.5px] border-gray-300 rounded p-3"
           disabled
         />
 

@@ -141,7 +141,7 @@ const AddBank = () => {
     name="bankName"
     value={form.bankName}
     onChange={handleChange}
-    className="border rounded-md p-3 w-full"
+    className="border-[0.5px] border-gray-300 rounded-md p-3 w-full"
     disabled={!!editBankId}
   />
   <input
@@ -150,7 +150,7 @@ const AddBank = () => {
     name="accountNumber"
     value={form.accountNumber}
     onChange={handleChange}
-    className="border rounded-md p-3 w-full"
+    className="border-[0.5px] border-gray-300 rounded-md p-3 w-full"
     disabled={!!editBankId}
   />
   <input
@@ -159,7 +159,7 @@ const AddBank = () => {
     name="ifscCode"
     value={form.ifscCode}
     onChange={handleChange}
-    className="border rounded-md p-3 w-full"
+    className="border-[0.5px] border-gray-300 rounded-md p-3 w-full"
      disabled={!!editBankId}
   />
   <input
@@ -168,7 +168,7 @@ const AddBank = () => {
     name="branch"
     value={form.branch}
     onChange={handleChange}
-    className="border rounded-md p-3 w-full"
+    className="border-[0.5px] border-gray-300 rounded-md p-3 w-full"
      disabled={!!editBankId}
   />
 
@@ -230,14 +230,14 @@ const AddBank = () => {
       name="accountHolderName"
       value={form.accountHolderName}
       onChange={handleChange}
-      className="border rounded-md p-3 w-full mb-3"
+      className="border-[0.5px] border-gray-300 rounded-md p-3 w-full mb-3"
       disabled={!!editBankId}
     />
     <select
       name="status"
       value={form.status}
       onChange={handleChange}
-      className="border rounded-md p-3 w-full mb-3"
+      className="border-[0.5px] border-gray-300 rounded-md p-3 w-full mb-3"
     >
       <option>Active</option>
       <option>Inactive</option>

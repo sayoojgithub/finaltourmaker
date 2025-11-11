@@ -377,7 +377,7 @@ cron.schedule("*/2 * * * *", async () => {
 
   // find candidates
   const candidates = await FrontOfficer.find({
-    status: "Active",
+    // status: "Active",
     isOnline: true,
   }).select("_id lastClientCreatedAt lastLoginAt sessionVersion");
   console.log(candidates,"candidates")
@@ -396,7 +396,7 @@ cron.schedule("*/2 * * * *", async () => {
           fo._id,
           {
             $set: {
-              status: "Inactive",
+              // status: "Inactive",
               isOnline: false,
               forceLoggedOutAt: now,
             },

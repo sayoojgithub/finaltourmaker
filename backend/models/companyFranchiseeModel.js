@@ -15,6 +15,11 @@ const franchiseeSchema = new mongoose.Schema({
   status: { type: String, enum: ['Active', 'Inactive'], default: 'Active' },
   role: { type: String, default: 'companyFranchisee' },
   company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true },
+   assignedPincodes: {
+    type: [String],
+    default: [],
+    index: true, // helpful for lookups like "who owns this pincode?"
+  },
 }, { timestamps: true });
 
 export default mongoose.model('Franchisee', franchiseeSchema);

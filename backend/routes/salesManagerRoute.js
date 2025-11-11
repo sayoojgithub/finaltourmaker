@@ -17,6 +17,10 @@ import {
   createDailyTaskRequest,
   listDailyTaskRequests,
   getDailyTaskRequest,
+  listExecutivesForSalesManager,
+  getExecutivePreferences,
+  updateExecutivePreferences,
+  listAllCompanyDestinationsForManager
 } from "../controllers/salesManagerController.js";
 
 const router = express.Router();
@@ -41,4 +45,12 @@ router.get("/upload-requests/:id", verifyUser, getUploadRequestById);
 router.post("/daily-task-requests", verifyUser, createDailyTaskRequest);
 router.get("/daily-task-requests", verifyUser, listDailyTaskRequests);
 router.get("/daily-task-requests/:id", verifyUser, getDailyTaskRequest);
+
+router.get("/executives", verifyUser, listExecutivesForSalesManager);
+
+router.get("/executives/:id/preferences", verifyUser, getExecutivePreferences);
+router.put("/executives/:id/preferences", verifyUser, updateExecutivePreferences);
+
+// NEW: convenience list for all destinations in the manager's company
+router.get("/all-destinations", verifyUser, listAllCompanyDestinationsForManager);
 export default router;

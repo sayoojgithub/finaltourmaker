@@ -1,77 +1,75 @@
+// src/pages/salesManager/ExecutiveList.jsx
 import React, { useEffect, useState } from "react";
 import API from "../../api";
 import { toast } from "react-toastify";
+import { Pencil } from "lucide-react";
 
-export default function FoStatusManagement() {
+export default function ExecutiveList({ onOpen }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // pagination
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
-  // per-row toggle spinner
-  const [togglingId, setTogglingId] = useState(null);
+  const [search, setSearch] = useState("");
+  const [typing, setTyping] = useState("");
 
-  const fetchList = async (nextPage = page) => {
+  const fetchList = async (nextPage = page, q = search) => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
       params.set("page", String(nextPage));
       params.set("limit", "7");
+      if (q?.trim()) params.set("search", q.trim());
 
-      const res = await API.get(`/frontOfficerManager/frontofficers?${params.toString()}`);
+      const res = await API.get(`/salesManager/executives?${params.toString()}`);
       const { docs = [], page: p = 1, totalPages = 1, total = 0 } = res.data || {};
       setRows(docs);
       setPage(p);
       setTotalPages(totalPages);
       setTotal(total);
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to load front officers");
+      toast.error(e?.response?.data?.message || "Failed to load executives");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchList(1);
+    fetchList(1, search);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handlePrev = () => page > 1 && fetchList(page - 1);
-  const handleNext = () => page < totalPages && fetchList(page + 1);
+  // small debounce for typing -> search
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setSearch(typing);
+      fetchList(1, typing);
+    }, 400);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [typing]);
 
-  const toggleStatus = async (row) => {
-    const id = row._id;
-    const next = row.status === "Active" ? "Inactive" : "Active";
-
-    try {
-      setTogglingId(id);
-
-      // optimistic update
-      setRows((prev) =>
-        prev.map((r) => (r._id === id ? { ...r, status: next } : r))
-      );
-
-      await API.patch(`/frontOfficerManager/frontofficers/${id}/status`, { status: next });
-      toast.success(`Status updated to ${next}`);
-    } catch (e) {
-      // revert on error
-      setRows((prev) =>
-        prev.map((r) =>
-          r._id === row._id ? { ...r, status: row.status } : r
-        )
-      );
-      toast.error(e?.response?.data?.message || "Failed to update status");
-    } finally {
-      setTogglingId(null);
-    }
-  };
+  const handlePrev = () => page > 1 && fetchList(page - 1, search);
+  const handleNext = () => page < totalPages && fetchList(page + 1, search);
 
   return (
-    <div className="space-y-6">
-      {/* <h2 className="text-xl font-semibold text-[#222]">Front Officer Status</h2> */}
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex-1">
+          <label className="block">
+            <span className="block text-sm font-medium text-[#222] mb-1">Search by name</span>
+            <input
+              type="text"
+              value={typing}
+              onChange={(e) => setTyping(e.target.value)}
+              placeholder="Type a name…"
+              className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#8570EE]"
+            />
+          </label>
+        </div>
+      </div>
 
       <div className="overflow-x-auto rounded-2xl border border-gray-200">
         <table className="min-w-full divide-y divide-gray-200">
@@ -80,22 +78,21 @@ export default function FoStatusManagement() {
               <Th>Name</Th>
               <Th>Contact Number</Th>
               <Th>Email</Th>
-              <Th>Active Status</Th>
-              <Th>actions</Th>
-              <Th>Online</Th>
+              <Th>Status</Th>
+              <Th>{/* pencil */}</Th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 bg-white">
             {loading ? (
               <tr>
-                <td className="px-6 py-4 text-sm text-gray-500" colSpan={6}>
+                <td className="px-6 py-4 text-sm text-gray-500" colSpan={5}>
                   Loading…
                 </td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
-                <td className="px-6 py-4 text-sm text-gray-500" colSpan={6}>
-                  No front officers found.
+                <td className="px-6 py-4 text-sm text-gray-500" colSpan={5}>
+                  No executives found.
                 </td>
               </tr>
             ) : (
@@ -116,21 +113,15 @@ export default function FoStatusManagement() {
                     </span>
                   </Td>
                   <Td>
-                    <Toggle
-                      checked={r.status === "Active"}
-                      onChange={() => toggleStatus(r)}
-                      disabled={togglingId === r._id}
-                    />
+                    <button
+                      type="button"
+                      onClick={() => onOpen(r._id)}
+                      title="Open"
+                      className="inline-flex items-center justify-center w-8 h-8 rounded-full border border-gray-300 hover:bg-gray-50 text-gray-700"
+                    >
+                      <Pencil size={16} />
+                    </button>
                   </Td>
-                  <Td>
-           <span
-             className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${
-               r.isOnline ? "bg-emerald-100 text-emerald-800" : "bg-gray-200 text-gray-700"
-             }`}
-           >
-             {r.isOnline ? "Online" : "Offline"}
-           </span>
-         </Td>
                 </tr>
               ))
             )}
@@ -175,27 +166,4 @@ function Th({ children }) {
 
 function Td({ children, className = "" }) {
   return <td className={`px-6 py-4 text-sm text-gray-800 ${className}`}>{children}</td>;
-}
-
-/** Minimal green toggle with accessible button semantics */
-function Toggle({ checked, onChange, disabled }) {
-  return (
-    <button
-      type="button"
-      onClick={onChange}
-      disabled={disabled}
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-        checked ? "bg-green-500" : "bg-gray-300"
-      } ${disabled ? "opacity-50 cursor-not-allowed" : "hover:opacity-90"}`}
-      aria-pressed={checked}
-      aria-label="Toggle status"
-      title={checked ? "Set Inactive" : "Set Active"}
-    >
-      <span
-        className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
-          checked ? "translate-x-5" : "translate-x-1"
-        }`}
-      />
-    </button>
-  );
 }

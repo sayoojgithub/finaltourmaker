@@ -136,6 +136,8 @@ import CreateBranch from "./CreateBranch";
 import CreateFranchisee from "./CreateFranchisee";
 import CreateAgent from "./CreateAgent";
 import CreateEmployee from "./CreateEmployee";
+import PincodeManagement from "./PincodeManagement";
+import PincodeManager from "./PincodeManager";
 
 const tabData = [
   { label: "Profile" },
@@ -144,7 +146,8 @@ const tabData = [
   { label: "Create Branch"},
   { label: "Create Franchisee"},
   { label: "Create Agent"},
-  { label: "Create Employee"}
+  { label: "Create Employee"},
+  { label: "Pincode Management" },
 
 
 ];
@@ -152,9 +155,11 @@ const tabData = [
 export default function CompanyProfile() {
   const [activeTab, setActiveTab] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false); // one toggle for ALL viewports
-
-  const activeLabel = tabData[activeTab]?.label ?? "";
-
+   const [pincodeTarget, setPincodeTarget] = useState(null);
+  // const activeLabel = tabData[activeTab]?.label ?? "";
+  const activeLabel = pincodeTarget
+    ? `Pincode Management — ${pincodeTarget.type === "branch" ? "Branch" : "Franchisee"}`
+    : (tabData[activeTab]?.label ?? "");
   const toggleMenu = () => setMenuOpen((v) => !v);
   const closeMenu = () => setMenuOpen(false);
 
@@ -171,31 +176,54 @@ export default function CompanyProfile() {
   }, [menuOpen]);
 
   const handleSelect = (idx) => {
+    setPincodeTarget(null);
     setActiveTab(idx);
     closeMenu();
   };
 
-  const renderTabContent = () => {
+  // const renderTabContent = () => {
+  //   switch (activeTab) {
+  //     case 0:
+  //       return <Profile />;
+  //     case 1:
+  //       return <AddBank />;
+  //     case 2:
+  //       return <TermsAndConditions />;
+  //     case 3:
+  //       return <CreateBranch />;
+  //     case 4:
+  //       return <CreateFranchisee />
+  //     case 5:
+  //       return <CreateAgent />
+  //     case 6:
+  //       return <CreateEmployee />  
+  //     default:
+  //       return null;
+  //   }
+  // };
+ const renderTabContent = () => {
+    if (pincodeTarget) {
+      return (
+        <PincodeManager
+          target={pincodeTarget}
+          onBack={() => setPincodeTarget(null)}
+        />
+      );
+    }
+
     switch (activeTab) {
-      case 0:
-        return <Profile />;
-      case 1:
-        return <AddBank />;
-      case 2:
-        return <TermsAndConditions />;
-      case 3:
-        return <CreateBranch />;
-      case 4:
-        return <CreateFranchisee />
-      case 5:
-        return <CreateAgent />
-      case 6:
-        return <CreateEmployee />  
-      default:
-        return null;
+      case 0: return <Profile />;
+      case 1: return <AddBank />;
+      case 2: return <TermsAndConditions />;
+      case 3: return <CreateBranch />;
+      case 4: return <CreateFranchisee />;
+      case 5: return <CreateAgent />;
+      case 6: return <CreateEmployee />;
+      case 7: // 👇 NEW tab
+        return <PincodeManagement onOpenTarget={(t) => setPincodeTarget(t)} />;
+      default: return null;
     }
   };
-
   return (
     <div className="w-full max-w-[100rem] mx-auto bg-white rounded-3xl shadow-md p-6 md:p-8 mb-6 mt-6">
       {/* Header */}
@@ -213,7 +241,7 @@ export default function CompanyProfile() {
           {/* <span className="hidden sm:inline">Menu</span> */}
         </button>
 
-        <h2 className="text-xl md:text-2xl font-semibold text-[#222] truncate">
+        <h2 className="text-xl md:text-3xl font-extrabold font-[Poppins] text-[#6b4fe0] tracking-tight drop-shadow-sm">
           {activeLabel}
         </h2>
 

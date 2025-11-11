@@ -22,7 +22,12 @@ import {
   listFranchisees,
   listEmployees,
   createEmployee,
-  updateEmployee
+  updateEmployee,
+  listCompanyBranches,
+  listCompanyFranchisees,
+  getAssignedPincodes,
+  assignPincodes,
+  removePincodes
 } from "../controllers/companyController.js";
 
 const router = express.Router();
@@ -49,6 +54,13 @@ router.post('/createEmployee', verifyUser, createEmployee);
 router.put('/updateEmployee/:id', verifyUser, updateEmployee);
 
 router.post("/sendOtp", sendOtpToEmail);
+//pincode management//
+router.get("/branches", verifyUser, listCompanyBranches);
+router.get("/franchisees", verifyUser, listCompanyFranchisees);
+
+router.get("/:type/:id", verifyUser, getAssignedPincodes); // type = branch|franchisee
+router.post("/:type/:id/assign", verifyUser, assignPincodes);
+router.post("/:type/:id/remove", verifyUser, removePincodes);
 
 
 

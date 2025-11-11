@@ -159,6 +159,9 @@ export const login = async (req, res) => {
         if (!isMatch) {
           return res.status(401).json({ message: "Invalid credentials" });
         }
+        if (typeof found.status === "string" && found.status === "Inactive") {
+          return res.status(403).json({ message: "You can't login now. Your account is Inactive." });
+        }
         user = found;
         role = entry.role;
         break;
@@ -175,7 +178,7 @@ export const login = async (req, res) => {
         user._id,
         {
           $set: {
-            status: "Active",
+            // status: "Active",
             isOnline: true,
             lastLoginAt: now,
             lastActivityAt: now,
@@ -230,7 +233,7 @@ export const logout = async (req, res) => {
         if (decoded?.role === "frontofficer") {
           await FrontOfficer.findByIdAndUpdate(
             decoded._id,
-            { $set: { status: "Inactive", isOnline: false }, $inc: { sessionVersion: 1 } }
+            { $set: {  isOnline: false }, $inc: { sessionVersion: 1 } }
           );
         }
       }

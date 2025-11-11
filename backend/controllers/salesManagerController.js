@@ -8,6 +8,8 @@ import UploadRequest from "../models/uploadRequestModel.js";
 import DailyTaskRequest from "../models/dailyTaskRequestModel.js";
 import GroupTour from "../models/groupTourModel.js";
 import FixedTour from "../models/fixedTourModel.js";
+import Executive from "../models/executiveModel.js";
+import mongoose from "mongoose";
 export async function getSalesManagerCountries(req, res) {
   try {
     const userId = req.userId; // set by verifyUser
@@ -1168,6 +1170,159 @@ export async function getDailyTaskRequest(req, res) {
     });
   } catch (err) {
     console.error("getDailyTaskRequest error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+
+export async function listExecutivesForSalesManager(req, res) {
+  try {
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+    const manager = await SalesManager.findById(userId)
+      .select("company type branch franchisee");
+    if (!manager) {
+      return res.status(401).json({ message: "You are not authorised" });
+    }
+
+    let { page = 1, limit = 7, search = "" } = req.query;
+    page = Math.max(1, parseInt(page, 10) || 1);
+    limit = Math.max(1, parseInt(limit, 10) || 7);
+
+    const filter = {
+      company: manager.company,
+      type: manager.type,
+    };
+    if (manager.branch) filter.branch = manager.branch;
+    if (manager.franchisee) filter.franchisee = manager.franchisee;
+
+    if (search && String(search).trim().length) {
+      const safe = String(search).trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      filter.name = { $regex: safe, $options: "i" };
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [items, total] = await Promise.all([
+      Executive.find(filter)
+        .select("name contactNumber email status createdAt")
+        .sort({ createdAt: -1, _id: 1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Executive.countDocuments(filter),
+    ]);
+
+    return res.json({
+      docs: items.map((it) => ({
+        _id: it._id,
+        name: it.name,
+        contactNumber: it.contactNumber,
+        email: it.email,
+        status: it.status,
+      })),
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit) || 1,
+    });
+  } catch (err) {
+    console.error("listExecutivesForSalesManager error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export async function listAllCompanyDestinationsForManager(req, res) {
+  try {
+    const manager = await SalesManager.findById(req.userId).select("company");
+    if (!manager) return res.status(401).json({ message: "Unauthorized" });
+
+    const dests = await Destination.find({ company: manager.company })
+      .select("_id name")
+      .sort({ name: 1 })
+      .lean();
+
+    const options = dests.map((d) => ({ _id: d._id, value: d.name, label: d.name }));
+    return res.json(options);
+  } catch (err) {
+    console.error("listAllCompanyDestinationsForManager:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+/**
+ * GET /salesManager/executives/:id/preferences
+ * → Fetch a single executive and return all preference arrays.
+ */
+export async function getExecutivePreferences(req, res) {
+  try {
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id))
+      return res.status(400).json({ message: "Invalid executive ID" });
+
+    const exec = await Executive.findById(id)
+      .select(
+        "name email contactNumber status " +
+          "prefTourCategories prefPrimaryDestinations prefGroupTypes prefNumberOfDays " +
+          "prefClientTypes prefCurrentLocations prefBehaviours prefConnectedThrough prefClientContactOptions"
+      )
+      .lean();
+
+    if (!exec) return res.status(404).json({ message: "Executive not found" });
+
+    return res.json(exec);
+  } catch (err) {
+    console.error("getExecutivePreferences:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+/**
+ * PUT /salesManager/executives/:id/preferences
+ * → Replace all provided preference arrays for the given executive.
+ */
+export async function updateExecutivePreferences(req, res) {
+  try {
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id))
+      return res.status(400).json({ message: "Invalid executive ID" });
+
+    const allowed = [
+      "prefTourCategories",
+      "prefPrimaryDestinations",
+      "prefGroupTypes",
+      "prefNumberOfDays",
+      "prefClientTypes",
+      "prefCurrentLocations",
+      "prefBehaviours",
+      "prefConnectedThrough",
+      "prefClientContactOptions"
+    ];
+
+    const $set = {};
+    for (const k of allowed) {
+      if (k in req.body) $set[k] = Array.isArray(req.body[k]) ? req.body[k] : [];
+    }
+
+    // sanitize days
+    if ("prefNumberOfDays" in $set) {
+      $set.prefNumberOfDays = $set.prefNumberOfDays
+        .map((n) => Number(n))
+        .filter((n) => Number.isFinite(n) && n > 0 && n <= 365)
+        .map((n) => Math.trunc(n));
+    }
+
+    const updated = await Executive.findByIdAndUpdate(id, { $set }, { new: true })
+      .select(
+        "prefTourCategories prefPrimaryDestinations prefGroupTypes prefNumberOfDays " +
+          "prefClientTypes prefCurrentLocations prefBehaviours prefConnectedThrough prefClientContactOptions"
+      );
+
+    if (!updated) return res.status(404).json({ message: "Executive not found" });
+    return res.json(updated);
+  } catch (err) {
+    console.error("updateExecutivePreferences:", err);
     return res.status(500).json({ message: "Internal server error" });
   }
 }

@@ -1,121 +1,4 @@
 
-// import React, { useState, useRef } from "react";
-// import { ArrowLeft, ArrowRight } from "lucide-react";
-// import CreateDestination from "./CreateDestination";
-// import CreateVendor from "./CreateVendor";
-// import CreateVehicle from "./CreateVehicle";
-// import CreateAccomadation from "./CreateAccommodation";
-// import CreateTrip from "./CreateTrip";
-// import CreateAddOnTrip from "./CreateAddOnTrip";
-// import CreateActivity from "./CreateActivity";
-// import CreateFood from "./CreateFood";
-// import CreateGroupTour from "./CreateGroupTour";
-// import CreateFixedTour from "./CreateFixedTour";
-
-// const tabData = [
-//   { label: "Destination" },
-//   { label: "Vender" },
-//   { label: "Vehicle" },
-//   { label: "Accommodation" },
-//   { label: "Trip" },
-//   { label: "Addon Trip" },
-//   { label: "Activity" },
-//   { label: "Food" },
-//   { label: "Group Tour" },
-//   { label: "Fixed Tour" },
-// ];
-
-// export default function PurchaserProfile() {
-//   const [activeTab, setActiveTab] = useState(0);
-//   const scrollRef = useRef(null);
-
-//   const scrollTabs = (direction) => {
-//     if (scrollRef.current) {
-//       scrollRef.current.scrollBy({
-//         left: direction === "left" ? -150 : 150,
-//         behavior: "smooth",
-//       });
-//     }
-//   };
-
-//   const renderTabContent = () => {
-//     switch (activeTab) {
-//       case 0:
-//         return <CreateDestination />;
-//       case 1:
-//         return <CreateVendor />;
-//       case 2:
-//         return <CreateVehicle />;
-//       case 3:
-//         return <CreateAccomadation />;
-//       case 4:
-//         return <CreateTrip />;
-//       case 5:
-//         return <CreateAddOnTrip />;
-//       case 6:
-//         return <CreateActivity />;
-//       case 7:
-//         return <CreateFood />;
-//       case 8:
-//         return <CreateGroupTour />;
-//       case 9:
-//         return <CreateFixedTour />;
-//       default:
-//         return null;
-//     }
-//   };
-
-//   return (
-//     <div className="w-full max-w-[100rem] mx-auto bg-white rounded-3xl shadow-md p-6 md:p-8 mb-6 mt-6 ">
-//       {/* Scrollable Tab Container */}
-//       <div className="w-full flex items-center gap-3">
-//         {/* Scroll Left Button */}
-//         <button
-//           type="button"
-//           onClick={() => scrollTabs("left")}
-//           className="inline-flex items-center justify-center rounded-full p-2 bg-[#8570EE] text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#8570EE]"
-//           aria-label="Scroll tabs left"
-//         >
-//           <ArrowLeft size={20} />
-//         </button>
-
-//         {/* Tab Buttons */}
-//         <div className="flex-1 rounded-2xl bg-[#EAEAEA] shadow-sm overflow-hidden">
-//           <div
-//             ref={scrollRef}
-//             className="flex overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none]"
-//             style={{ scrollbarWidth: "none" }} // Firefox
-//           >
-//             {tabData.map((tab, idx) => (
-//               <button
-//                 key={tab.label}
-//                 onClick={() => setActiveTab(idx)}
-//                 className={`flex-0 px-8 py-4 font-semibold text-[18px] whitespace-nowrap transition-colors
-//                   ${activeTab === idx ? "bg-[#8570EE] text-white" : "bg-transparent text-[#222]"}`}
-//                 style={{ flex: "0 0 auto" }}
-//               >
-//                 {tab.label}
-//               </button>
-//             ))}
-//           </div>
-//         </div>
-
-//         {/* Scroll Right Button */}
-//         <button
-//           type="button"
-//           onClick={() => scrollTabs("right")}
-//           className="inline-flex items-center justify-center rounded-full p-2 bg-[#8570EE] text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#8570EE]"
-//           aria-label="Scroll tabs right"
-//         >
-//           <ArrowRight size={20} />
-//         </button>
-//       </div>
-
-//       {/* Tab Content */}
-//       <div className="mt-6">{renderTabContent()}</div>
-//     </div>
-//   );
-// }
 import React, { useState, useEffect } from "react";
 import { Menu, X, ChevronRight } from "lucide-react";
 import CreateDestination from "./CreateDestination";
@@ -212,7 +95,7 @@ export default function PurchaserProfile() {
           {/* <span className="hidden sm:inline">Menu</span> */}
         </button>
 
-        <h2 className="text-xl md:text-2xl font-semibold text-[#222] truncate">
+        <h2 className="text-xl md:text-3xl font-extrabold font-[Poppins] text-[#6b4fe0] tracking-tight drop-shadow-sm">
           {activeLabel}
         </h2>
 
@@ -274,6 +157,7 @@ export default function PurchaserProfile() {
     </div>
   );
 }
+
 
 
 

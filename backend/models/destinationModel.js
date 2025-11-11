@@ -40,5 +40,5 @@ const destinationSchema = new mongoose.Schema({
     default: Date.now,
   },
 });
-
+destinationSchema.index({ company: 1, activeStatus: 1, name: 1 });
 export default mongoose.model("Destination", destinationSchema);

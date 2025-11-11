@@ -23,7 +23,7 @@ export async function listEntryDestinations(req, res) {
       company: entry.company,
       activeStatus: true,
     })
-      .select("_id name destinationCode")
+      .select("_id name")
       .sort({ name: 1 })
       .lean();
 
@@ -311,7 +311,7 @@ export async function listClientsByEntry(req, res) {
 
     // Optional name regex (not indexed; convenience)
     if (name && typeof name === "string") {
-      filter.name = { $regex: escapeRegex(name.trim()), $options: "i" };
+      filter.name = { $regex: "^" + escapeRegex(name.trim()), $options: "i" };
     }
 
     // Mobile: prefix regex -> can utilize index better with ^ (case-insensitive just in case)
