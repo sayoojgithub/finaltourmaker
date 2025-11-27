@@ -270,6 +270,7 @@ import digitalMarketerRoute from "./routes/digitalMarketerRoute.js";
 import entryStaffRoute from "./routes/entryStaffRoute.js";
 import frontOfficeRoute from "./routes/frontOfficerRoute.js";
 import frontOfficerManagerRoute from "./routes/frontOfficerManagerRoute.js";
+import executiveRoute from "./routes/executiveRoute.js"
 
 import FrontOfficer from "./models/frontOfficerModel.js"; // 👈 needed in cron
 import jwt from "jsonwebtoken";
@@ -363,6 +364,7 @@ app.use("/api/v1/digitalMarketer", digitalMarketerRoute);
 app.use("/api/v1/entry", entryStaffRoute);
 app.use("/api/v1/frontoffice", frontOfficeRoute);
 app.use("/api/v1/frontOfficerManager", frontOfficerManagerRoute);
+app.use("/api/v1/executive",executiveRoute)
 
 /* ---------------- CRON: force logout idle frontofficers ----------------
    Rule: if (now - max(lastActivityAt, lastClientCreatedAt, lastLoginAt)) >= 30min

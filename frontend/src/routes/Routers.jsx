@@ -15,6 +15,7 @@ import CreativeStaffProfile from '../pages/CreativeStaff/CreativeStaffProfile'
 import EntryStaffProfile from '../pages/Entry/EntryStaffProfile'
 import FrontOfficerProfile from '../pages/FrontOfficer/FrontOfficerProfile'
 import FrontOfficerManagerfProfile from '../pages/FrontOfficerManager/FrontOfficerManagerProfile'
+import ExecutiveProfile from '../pages/Executive/ExecutiveProfile'
 
 
 import {Routes, Route} from "react-router-dom"
@@ -114,6 +115,14 @@ const Routers = () => {
         element={
           <ProtectedRoute allowedRoles={['frontofficermanager']}>
             <FrontOfficerManagerfProfile/>
+          </ProtectedRoute>
+        }
+      />
+       <Route
+        path='/executiveProfile'
+        element={
+          <ProtectedRoute allowedRoles={['executive']}>
+            <ExecutiveProfile/>
           </ProtectedRoute>
         }
       />

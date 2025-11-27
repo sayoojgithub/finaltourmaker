@@ -39,7 +39,14 @@ import {
   getTripDetails,
   createGroupTour,
   getGroupTours,
+  getGroupTourById,
+  saveGroupTourBO,
   updateGroupTour,
+  getTripVehiclesForDate,
+  getTripFoodsForDate,
+  getAddonTripVehiclesForDate,
+  getActivitiesPricingForDate,
+  getAccommodationsPricingForDate,
   createFixedTour,
   getFixedTours,
   updateFixedTour,
@@ -90,9 +97,18 @@ router.get("/addontrips", verifyUser, getAddOnTrips);
 router.put("/updateAddOnTrip/:id", verifyUser, updateAddOnTrip);
 router.patch("/updateAddOnTripStatus/:id/status",verifyUser, updateAddOnTripStatus);
 router.get("/tripDetails/:tripId", verifyUser, getTripDetails);
+//groupTour creation updation cost calculation//
 router.post("/createGroupTour", verifyUser, createGroupTour);
 router.get("/groupTours", verifyUser, getGroupTours);
+router.get("/groupTours/:id", verifyUser, getGroupTourById);
+router.put("/groupTours/:id/bo", verifyUser, saveGroupTourBO);
 router.put("/updateGroupTour/:id", verifyUser, updateGroupTour);
+router.get("/tripVehicles/:tripId", verifyUser, getTripVehiclesForDate);
+router.get("/tripFoods/:tripId", verifyUser, getTripFoodsForDate)
+router.get("/addonTripVehicles/:addonTripId", verifyUser, getAddonTripVehiclesForDate); 
+router.get("/activitiesPricing", verifyUser, getActivitiesPricingForDate);
+router.get("/accommodationsPricing", verifyUser, getAccommodationsPricingForDate);
+//fixedTour creation updation cost calculation//
 router.post("/createFixedTour", verifyUser, createFixedTour);
 router.get("/fixedTours", verifyUser, getFixedTours);
 router.put("/updateFixedTour/:id", verifyUser, updateFixedTour);

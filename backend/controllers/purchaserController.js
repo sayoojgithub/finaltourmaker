@@ -14,7 +14,7 @@ import Food from "../models/foodModel.js";
 import { getNextDestinationNumber } from "../utils/getNextDestinationNumber.js";
 import { getNextVendorNumber } from "../utils/getNextVendorNumber.js";
 import { getNextAccommodationNumber } from "../utils/getNextAccommodationNumber.js";
-
+import Counter from "../models/counterModel.js";
 export const createCountry = async (req, res) => {
   try {
     const { name } = req.body;
@@ -529,7 +529,6 @@ export const createVehicle = async (req, res) => {
     res.status(500).json({ message: "Failed to create vehicle" });
   }
 };
-
 
 export const updateVehicle = async (req, res) => {
   try {
@@ -1191,6 +1190,7 @@ export const getTripsByLocation = async (req, res) => {
       country: countryId,
       state: stateId,
       destination: destinationId,
+      // activeStatus:true,
     }).select("_id tripName");
 
     res.status(200).json(trips);
@@ -1231,7 +1231,7 @@ export const createActivity = async (req, res) => {
       activityName,
       description,
       prices,
-      imageUrl,  
+      imageUrl,
       purchaser: purchaserId,
       company: purchaser.company,
     });
@@ -1310,7 +1310,7 @@ export const updateActivity = async (req, res) => {
       activityName,
       description,
       prices,
-      imageUrl, 
+      imageUrl,
     } = req.body;
 
     activity.country = country;
@@ -1634,397 +1634,43 @@ export const getTripDetails = async (req, res) => {
   }
 };
 
-// export const createGroupTour = async (req, res) => {
-//   try {
-//     const purchaserId = req.userId;
+const buildArticleNumber = (tourName, seq) => {
+  const name = (tourName || "").replace(/\s+/g, "").toUpperCase(); // remove spaces, uppercase
 
-//     const purchaser = await Purchaser.findById(purchaserId);
-//     if (!purchaser) {
-//       return res.status(404).json({ message: "Purchaser not found" });
-//     }
+  const first3 = name.substring(0, 3); // first 3 letters
+  const last3 = name.slice(-3); // last 3 letters
 
-//     const company = purchaser.company;
+  const num = String(seq || 1).padStart(3, "0"); // 001 format
 
-//     const {
-//       country,
-//       state,
-//       destination,
-//       tourName,
-//       articleNumber,
-//       category,
-//       pickupPoint,
-//       dropOffPoint,
-//       totalDays,
-//       totalNights,
-//       startDate,
-//       netCost,
-//       pricePerPax,
-//       totalPax,
-//       riskAmount,
-//       includes,
-//       excludes,
-//       days,
-//     } = req.body;
-
-//     if (!Array.isArray(days)) {
-//       return res.status(400).json({ message: "Invalid itinerary days format" });
-//     }
-
-//     // 🗓 Convert startDate to Date object
-//     const parsedStartDate = new Date(startDate);
-//     if (isNaN(parsedStartDate)) {
-//       return res.status(400).json({ message: "Invalid start date" });
-//     }
-
-//     // 🔁 Format each day: add label and compute actual date
-//     const formattedDays = days.map((day, index) => {
-//       const calculatedDate = new Date(parsedStartDate);
-//       calculatedDate.setDate(parsedStartDate.getDate() + index);
-
-//       return {
-//         ...day,
-//         dayLabel: `Day ${index + 1}`,
-//         date: calculatedDate, // 🗓 Correct date based on startDate + index
-//       };
-//     });
-
-//     const newTour = new GroupTour({
-//       purchaser: purchaserId,
-//       company,
-//       country,
-//       state,
-//       destination,
-//       tourName,
-//       articleNumber,
-//       category,
-//       pickupPoint,
-//       dropOffPoint,
-//       totalDays,
-//       totalNights,
-//       startDate: parsedStartDate,
-//       netCost,
-//       pricePerPax,
-//       totalPax,
-//       riskAmount,
-//       includes,
-//       excludes,
-//       days: formattedDays,
-//     });
-
-//     await newTour.save();
-
-//     return res.status(201).json({
-//       message: "Group Tour created successfully",
-//       tourId: newTour._id,
-//     });
-//   } catch (err) {
-//     console.error("Group tour creation error:", err.message);
-//     return res.status(500).json({ message: "Failed to create group tour" });
-//   }
-// };
-// export const getGroupTours = async (req, res) => {
-//   try {
-//     const purchaserId = req.userId; // from verifyUser middleware
-//     const purchaser = await Purchaser.findById(purchaserId);
-//     if (!purchaser) {
-//       return res
-//         .status(404)
-//         .json({ message: "Unauthorized: Purchaser not found or inactive." });
-//     }
-//     const { page = 1, limit = 3, search = "" } = req.query;
-
-//     const query = {
-//       purchaser: purchaserId,
-//       tourName: { $regex: search, $options: "i" }, // case-insensitive search
-//     };
-
-//     const totalTours = await GroupTour.countDocuments(query);
-//     const totalPages = Math.ceil(totalTours / limit);
-
-//     const tours = await GroupTour.find(query)
-//       .sort({ createdAt: -1 })
-//       .skip((page - 1) * limit)
-//       .limit(parseInt(limit));
-
-//     res.status(200).json({ tours, totalPages });
-//   } catch (error) {
-//     console.error("Error fetching group tours:", error);
-//     res.status(500).json({ error: "Server error while fetching group tours." });
-//   }
-// };
-
-// export const updateGroupTour = async (req, res) => {
-//   try {
-//     const purchaserId = req.userId;
-//     const tourId = req.params.id;
-
-//     const purchaser = await Purchaser.findById(purchaserId);
-//     if (!purchaser) {
-//       return res.status(404).json({ message: "Purchaser not found" });
-//     }
-
-//     const {
-//       country,
-//       state,
-//       destination,
-//       tourName,
-//       articleNumber,
-//       category,
-//       pickupPoint,
-//       dropOffPoint,
-//       totalDays,
-//       totalNights,
-//       startDate,
-//       netCost,
-//       pricePerPax,
-//       totalPax,
-//       riskAmount,
-//       includes,
-//       excludes,
-//       days,
-//     } = req.body;
-
-//     if (!Array.isArray(days)) {
-//       return res.status(400).json({ message: "Invalid itinerary days format" });
-//     }
-
-//     const parsedStartDate = new Date(startDate);
-//     if (isNaN(parsedStartDate)) {
-//       return res.status(400).json({ message: "Invalid start date" });
-//     }
-
-//     const formattedDays = days.map((day, index) => {
-//       const calculatedDate = new Date(parsedStartDate);
-//       calculatedDate.setDate(parsedStartDate.getDate() + index);
-
-//       return {
-//         ...day,
-//         dayLabel: `Day ${index + 1}`,
-//         date: calculatedDate,
-//       };
-//     });
-
-//     const updatedTour = await GroupTour.findByIdAndUpdate(
-//       tourId,
-//       {
-//         country,
-//         state,
-//         destination,
-//         tourName,
-//         articleNumber,
-//         category,
-//         pickupPoint,
-//         dropOffPoint,
-//         totalDays,
-//         totalNights,
-//         startDate: parsedStartDate,
-//         netCost,
-//         pricePerPax,
-//         totalPax,
-//         riskAmount,
-//         includes,
-//         excludes,
-//         days: formattedDays,
-//       },
-//       { new: true }
-//     );
-
-//     if (!updatedTour) {
-//       return res.status(404).json({ message: "Tour not found" });
-//     }
-
-//     res.status(200).json({
-//       message: "Group Tour updated successfully",
-//       tourId: updatedTour._id,
-//     });
-//   } catch (err) {
-//     console.error("Group tour update error:", err.message);
-//     res.status(500).json({ message: "Failed to update group tour" });
-//   }
-// };
-// controllers/groupTourController.js
-
-
-// CREATE
-// export const createGroupTour = async (req, res) => {
-//   try {
-//     const purchaserId = req.userId;
-//     const purchaser = await Purchaser.findById(purchaserId);
-//     if (!purchaser) return res.status(404).json({ message: "Purchaser not found" });
-
-//     const company = purchaser.company;
-
-//     const {
-//       country, state, destination, tourName, articleNumber, category,
-//       pickupPoint, dropOffPoint, totalDays, totalNights, startDate,
-//       netCost, pricePerPax, totalPax, riskAmount, includes, excludes, days,
-//     } = req.body;
-
-//     if (!Array.isArray(days)) {
-//       return res.status(400).json({ message: "Invalid itinerary days format" });
-//     }
-
-//     const parsedStartDate = new Date(startDate);
-//     if (isNaN(parsedStartDate)) {
-//       return res.status(400).json({ message: "Invalid start date" });
-//     }
-
-//     // Validate each day has segments array
-//     for (let i = 0; i < days.length; i++) {
-//       if (!Array.isArray(days[i].segments) || days[i].segments.length === 0) {
-//         return res.status(400).json({ message: `Day ${i + 1} requires at least one segment` });
-//       }
-//     }
-
-//     // Attach dayLabel + computed date
-//     const formattedDays = days.map((day, index) => {
-//       const calculatedDate = new Date(parsedStartDate);
-//       calculatedDate.setDate(parsedStartDate.getDate() + index);
-//       return {
-//         dayLabel: `Day ${index + 1}`,
-//         date: calculatedDate,
-//         segments: day.segments.map(s => ({
-//           country: s.country || undefined,
-//           state: s.state || undefined,
-//           destination: s.destination || undefined,
-//           trip: s.trip || undefined,
-//           selectedAddon: s.selectedAddon || undefined,
-//           selectedActivity: s.selectedActivity || undefined,
-//         })),
-//       };
-//     });
-
-//     const newTour = new GroupTour({
-//       purchaser: purchaserId,
-//       company,
-//       country, state, destination,
-//       tourName, articleNumber, category,
-//       pickupPoint, dropOffPoint,
-//       totalDays, totalNights,
-//       startDate: parsedStartDate,
-//       netCost, pricePerPax, totalPax, riskAmount,
-//       includes, excludes,
-//       days: formattedDays,
-//     });
-
-//     await newTour.save();
-//     return res.status(201).json({ message: "Group Tour created successfully", tourId: newTour._id });
-//   } catch (err) {
-//     console.error("Group tour creation error:", err);
-//     return res.status(500).json({ message: "Failed to create group tour" });
-//   }
-// };
-
-// // LIST
-// export const getGroupTours = async (req, res) => {
-//   try {
-//     const purchaserId = req.userId;
-//     const purchaser = await Purchaser.findById(purchaserId);
-//     if (!purchaser) {
-//       return res.status(404).json({ message: "Unauthorized: Purchaser not found or inactive." });
-//     }
-
-//     const { page = 1, limit = 3, search = "" } = req.query;
-//     const query = {
-//       purchaser: purchaserId,
-//       tourName: { $regex: search, $options: "i" },
-//     };
-
-//     const totalTours = await GroupTour.countDocuments(query);
-//     const totalPages = Math.ceil(totalTours / limit);
-
-//     const tours = await GroupTour.find(query)
-//       .sort({ createdAt: -1 })
-//       .skip((page - 1) * limit)
-//       .limit(parseInt(limit, 10));
-
-//     res.status(200).json({ tours, totalPages });
-//   } catch (error) {
-//     console.error("Error fetching group tours:", error);
-//     res.status(500).json({ error: "Server error while fetching group tours." });
-//   }
-// };
-
-// // UPDATE
-// export const updateGroupTour = async (req, res) => { 
-//   try {
-//     const purchaserId = req.userId;
-//     const tourId = req.params.id;
-//     const purchaser = await Purchaser.findById(purchaserId);
-//     if (!purchaser) return res.status(404).json({ message: "Purchaser not found" });
-
-//     const {
-//       country, state, destination, tourName, articleNumber, category,
-//       pickupPoint, dropOffPoint, totalDays, totalNights, startDate,
-//       netCost, pricePerPax, totalPax, riskAmount, includes, excludes, days,
-//     } = req.body;
-
-//     if (!Array.isArray(days)) {
-//       return res.status(400).json({ message: "Invalid itinerary days format" });
-//     }
-
-//     const parsedStartDate = new Date(startDate);
-//     if (isNaN(parsedStartDate)) return res.status(400).json({ message: "Invalid start date" });
-
-//     for (let i = 0; i < days.length; i++) {
-//       if (!Array.isArray(days[i].segments) || days[i].segments.length === 0) {
-//         return res.status(400).json({ message: `Day ${i + 1} requires at least one segment` });
-//       }
-//     }
-
-//     const formattedDays = days.map((day, index) => {
-//       const calculatedDate = new Date(parsedStartDate);
-//       calculatedDate.setDate(parsedStartDate.getDate() + index);
-//       return {
-//         dayLabel: `Day ${index + 1}`,
-//         date: calculatedDate,
-//         segments: day.segments.map(s => ({
-//           country: s.country || undefined,
-//           state: s.state || undefined,
-//           destination: s.destination || undefined,
-//           trip: s.trip || undefined,
-//           selectedAddon: s.selectedAddon || undefined,
-//           selectedActivity: s.selectedActivity || undefined,
-//         })),
-//       };
-//     });
-
-//     const updatedTour = await GroupTour.findByIdAndUpdate(
-//       tourId,
-//       {
-//         country, state, destination,
-//         tourName, articleNumber, category,
-//         pickupPoint, dropOffPoint,
-//         totalDays, totalNights,
-//         startDate: parsedStartDate,
-//         netCost, pricePerPax, totalPax, riskAmount,
-//         includes, excludes,
-//         days: formattedDays,
-//       },
-//       { new: true }
-//     );
-
-//     if (!updatedTour) return res.status(404).json({ message: "Tour not found" });
-
-//     res.status(200).json({ message: "Group Tour updated successfully", tourId: updatedTour._id });
-//   } catch (err) {
-//     console.error("Group tour update error:", err);
-//     res.status(500).json({ message: "Failed to update group tour" });
-//   }
-// };
-// CREATE
+  return `${first3}-${num}-${last3}`;
+};
 export const createGroupTour = async (req, res) => {
   try {
     const purchaserId = req.userId;
     const purchaser = await Purchaser.findById(purchaserId);
-    if (!purchaser) return res.status(404).json({ message: "Purchaser not found" });
+    if (!purchaser)
+      return res.status(404).json({ message: "Purchaser not found" });
 
     const company = purchaser.company;
 
     const {
-      country, state, destination, tourName, articleNumber, category,
-      pickupPoint, dropOffPoint, totalDays, totalNights, startDate,
-      netCost, pricePerPax, totalPax, riskAmount, includes, excludes, days,
+      country,
+      state,
+      destination,
+      tourName,
+      category,
+      pickupPoint,
+      dropOffPoint,
+      totalDays,
+      totalNights,
+      startDate,
+      netCost,
+      pricePerPax,
+      totalPax,
+      riskAmount,
+      includes,
+      excludes,
+      days,
     } = req.body;
 
     if (!Array.isArray(days)) {
@@ -2038,9 +1684,18 @@ export const createGroupTour = async (req, res) => {
 
     for (let i = 0; i < days.length; i++) {
       if (!Array.isArray(days[i].segments) || days[i].segments.length === 0) {
-        return res.status(400).json({ message: `Day ${i + 1} requires at least one segment` });
+        return res
+          .status(400)
+          .json({ message: `Day ${i + 1} requires at least one segment` });
       }
     }
+    const counter = await Counter.findOneAndUpdate(
+      { company },
+      { $inc: { TourSequence: 1 } },
+      { new: true, upsert: true }
+    );
+
+    const articleNumber = buildArticleNumber(tourName, counter.TourSequence);
 
     const formattedDays = days.map((day, index) => {
       const calculatedDate = new Date(parsedStartDate);
@@ -2065,18 +1720,35 @@ export const createGroupTour = async (req, res) => {
     const newTour = new GroupTour({
       purchaser: purchaserId,
       company,
-      country, state, destination,
-      tourName, articleNumber, category,
-      pickupPoint, dropOffPoint,
-      totalDays, totalNights,
+      country,
+      state,
+      destination,
+      tourName,
+      articleNumber,
+      category,
+      pickupPoint,
+      dropOffPoint,
+      totalDays,
+      totalNights,
       startDate: parsedStartDate,
-      netCost, pricePerPax, totalPax, riskAmount,
-      includes, excludes,
+      netCost,
+      pricePerPax,
+      totalPax,
+      seatsAvailable: totalPax || 0,
+      seatsBooked: 0,
+      riskAmount,
+      includes,
+      excludes,
       days: formattedDays,
     });
 
     await newTour.save();
-    return res.status(201).json({ message: "Group Tour created successfully", tourId: newTour._id });
+    return res
+      .status(201)
+      .json({
+        message: "Group Tour created successfully",
+        tourId: newTour._id,
+      });
   } catch (err) {
     console.error("Group tour creation error:", err);
     return res.status(500).json({ message: "Failed to create group tour" });
@@ -2089,7 +1761,9 @@ export const getGroupTours = async (req, res) => {
     const purchaserId = req.userId;
     const purchaser = await Purchaser.findById(purchaserId);
     if (!purchaser) {
-      return res.status(404).json({ message: "Unauthorized: Purchaser not found or inactive." });
+      return res
+        .status(404)
+        .json({ message: "Unauthorized: Purchaser not found or inactive." });
     }
 
     const { page = 1, limit = 3, search = "" } = req.query;
@@ -2113,18 +1787,171 @@ export const getGroupTours = async (req, res) => {
   }
 };
 
+const toDateOrNull = (v) => {
+  if (!v) return null;
+  const d = new Date(v);
+  return isNaN(d) ? null : d;
+};
+
+export const getGroupTourById = async (req, res) => {
+  try {
+    const purchaserId = req.userId;
+    const tourId = req.params.id;
+
+    const purchaser = await Purchaser.findById(purchaserId);
+    if (!purchaser) {
+      return res
+        .status(404)
+        .json({ message: "Unauthorized: Purchaser not found or inactive." });
+    }
+
+    const tour = await GroupTour.findOne({
+      _id: tourId,
+      purchaser: purchaserId,
+    })
+      .populate("country", "name")
+      .populate("state", "name")
+      .populate("destination", "name")
+      .populate({ path: "days.segments.country", select: "name" })
+      .populate({ path: "days.segments.state", select: "name" })
+      .populate({ path: "days.segments.destination", select: "name" })
+      .populate({
+        path: "days.segments.trip",
+        select: "tripName duration price",
+      })
+      .populate({
+        path: "days.segments.selectedAddon",
+        select: "addontripName price",
+      })
+      .populate({
+        path: "days.segments.selectedActivities",
+        select: "activityName price",
+      })
+      .lean();
+
+    if (!tour) return res.status(404).json({ message: "Tour not found" });
+
+    return res.status(200).json({ tour });
+  } catch (err) {
+    console.error("Error fetching tour by id:", err);
+    return res
+      .status(500)
+      .json({ message: "Server error while fetching the tour." });
+  }
+};
+
+/**
+ * PUT /purchaser/groupTours/:id/bo
+ * Body:
+ * {
+ *   vehLines:      { "i-j": [ ... ] },
+ *   addonVehLines: { "i-j": [ ... ] },
+ *   foodLines:     { "i-j": [ ... ] },
+ *   actLines:      { "i-j": [ ... ] },
+ *   accLines:      { "i-j": [ ... ] }
+ * }
+ */
+export const saveGroupTourBO = async (req, res) => {
+  try {
+    const purchaserId = req.userId;
+    const tourId = req.params.id;
+
+    const purchaser = await Purchaser.findById(purchaserId);
+    if (!purchaser) {
+      return res
+        .status(404)
+        .json({ message: "Unauthorized: Purchaser not found or inactive." });
+    }
+
+    const tour = await GroupTour.findOne({
+      _id: tourId,
+      purchaser: purchaserId,
+    });
+    if (!tour) return res.status(404).json({ message: "Tour not found" });
+
+    const {
+      vehLines = {},
+      addonVehLines = {},
+      foodLines = {},
+      actLines = {},
+      accLines = {},
+    } = req.body || {};
+
+    // Walk days/segments; segKey = `${i}-${j}`
+    (tour.days || []).forEach((day, i) => {
+      (day.segments || []).forEach((seg, j) => {
+        const key = `${i}-${j}`;
+
+        const normalize = (arr) =>
+          (arr || []).map((x) => ({ ...x, date: toDateOrNull(x?.date) }));
+
+        seg.boTripVehicles = normalize(vehLines[key]);
+        seg.boAddonVehicles = normalize(addonVehLines[key]);
+        seg.boFoods = normalize(foodLines[key]);
+        seg.boActivities = normalize(actLines[key]);
+        seg.boAccommodations = normalize(accLines[key]);
+      });
+    });
+
+    await tour.save();
+
+    const fresh = await GroupTour.findById(tourId)
+      .populate("country", "name")
+      .populate("state", "name")
+      .populate("destination", "name")
+      .populate({ path: "days.segments.country", select: "name" })
+      .populate({ path: "days.segments.state", select: "name" })
+      .populate({ path: "days.segments.destination", select: "name" })
+      .populate({
+        path: "days.segments.trip",
+        select: "tripName duration price",
+      })
+      .populate({
+        path: "days.segments.selectedAddon",
+        select: "addontripName price",
+      })
+      .populate({
+        path: "days.segments.selectedActivities",
+        select: "activityName price",
+      })
+      .lean();
+
+    return res
+      .status(200)
+      .json({ message: "Booking order saved", tour: fresh });
+  } catch (err) {
+    console.error("saveGroupTourBO error:", err);
+    return res.status(500).json({ message: "Failed to save booking order" });
+  }
+};
 // UPDATE
 export const updateGroupTour = async (req, res) => {
   try {
     const purchaserId = req.userId;
     const tourId = req.params.id;
     const purchaser = await Purchaser.findById(purchaserId);
-    if (!purchaser) return res.status(404).json({ message: "Purchaser not found" });
+    if (!purchaser)
+      return res.status(404).json({ message: "Purchaser not found" });
 
     const {
-      country, state, destination, tourName, articleNumber, category,
-      pickupPoint, dropOffPoint, totalDays, totalNights, startDate,
-      netCost, pricePerPax, totalPax, riskAmount, includes, excludes, days,
+      country,
+      state,
+      destination,
+      tourName,
+      articleNumber,
+      category,
+      pickupPoint,
+      dropOffPoint,
+      totalDays,
+      totalNights,
+      startDate,
+      netCost,
+      pricePerPax,
+      totalPax,
+      riskAmount,
+      includes,
+      excludes,
+      days,
     } = req.body;
 
     if (!Array.isArray(days)) {
@@ -2132,11 +1959,14 @@ export const updateGroupTour = async (req, res) => {
     }
 
     const parsedStartDate = new Date(startDate);
-    if (isNaN(parsedStartDate)) return res.status(400).json({ message: "Invalid start date" });
+    if (isNaN(parsedStartDate))
+      return res.status(400).json({ message: "Invalid start date" });
 
     for (let i = 0; i < days.length; i++) {
       if (!Array.isArray(days[i].segments) || days[i].segments.length === 0) {
-        return res.status(400).json({ message: `Day ${i + 1} requires at least one segment` });
+        return res
+          .status(400)
+          .json({ message: `Day ${i + 1} requires at least one segment` });
       }
     }
 
@@ -2163,229 +1993,487 @@ export const updateGroupTour = async (req, res) => {
     const updatedTour = await GroupTour.findByIdAndUpdate(
       tourId,
       {
-        country, state, destination,
-        tourName, articleNumber, category,
-        pickupPoint, dropOffPoint,
-        totalDays, totalNights,
+        country,
+        state,
+        destination,
+        tourName,
+        articleNumber,
+        category,
+        pickupPoint,
+        dropOffPoint,
+        totalDays,
+        totalNights,
         startDate: parsedStartDate,
-        netCost, pricePerPax, totalPax, riskAmount,
-        includes, excludes,
+        netCost,
+        pricePerPax,
+        totalPax,
+        riskAmount,
+        includes,
+        excludes,
         days: formattedDays,
       },
       { new: true }
     );
 
-    if (!updatedTour) return res.status(404).json({ message: "Tour not found" });
+    if (!updatedTour)
+      return res.status(404).json({ message: "Tour not found" });
 
-    res.status(200).json({ message: "Group Tour updated successfully", tourId: updatedTour._id });
+    res
+      .status(200)
+      .json({
+        message: "Group Tour updated successfully",
+        tourId: updatedTour._id,
+      });
   } catch (err) {
     console.error("Group tour update error:", err);
     res.status(500).json({ message: "Failed to update group tour" });
   }
 };
-// export const createFixedTour = async (req, res) => {
-//   try {
-//     const purchaserId = req.userId;
+const normalizeStart = (d) => new Date(new Date(d).setHours(0, 0, 0, 0));
+const normalizeEnd = (d) => new Date(new Date(d).setHours(23, 59, 59, 999));
+const inRange = (d, from, to) =>
+  d >= normalizeStart(from) && d <= normalizeEnd(to);
 
-//     const purchaser = await Purchaser.findById(purchaserId);
-//     if (!purchaser) {
-//       return res.status(404).json({ message: "Purchaser not found" });
-//     }
+/**
+ * GET /purchaser/tripVehicles/:tripId?date=YYYY-MM-DD
+ * Returns available categories and vehicles for that trip on the given date,
+ * including vehicle percentage and base BO price (from Trip.vehicles[].prices[]).
+ */
+export const getTripVehiclesForDate = async (req, res) => {
+  try {
+    const purchaserId = req.userId;
+    const { tripId } = req.params;
+    const { date } = req.query;
 
-//     const company = purchaser.company;
+    if (!date)
+      return res
+        .status(400)
+        .json({ message: "date query (YYYY-MM-DD) is required" });
+    const dayDate = new Date(date);
+    if (isNaN(dayDate))
+      return res.status(400).json({ message: "Invalid date" });
 
-//     const {
-//       country,
-//       state,
-//       destination,
-//       tourName,
-//       articleNumber,
-//       category,
-//       pickupPoint,
-//       dropOffPoint,
-//       totalDays,
-//       totalNights,
-//       validFrom,
-//       validTill,
-//       paxPrices,
-//       includes,
-//       excludes,
-//       days,
-//     } = req.body;
+    const purchaser = await Purchaser.findById(purchaserId);
+    if (!purchaser) {
+      return res
+        .status(404)
+        .json({ message: "Unauthorized: Purchaser not found or inactive." });
+    }
 
-//     if (!Array.isArray(days)) {
-//       return res.status(400).json({ message: "Invalid itinerary days format" });
-//     }
+    const trip = await Trip.findOne({ _id: tripId, purchaser: purchaserId })
+      .populate({
+        path: "vehicles.vehicle",
+        select: "vehicle percentage", // vehicle name + percentage (from Vehicle model)
+      })
+      .lean();
 
-//     const fromDate = new Date(validFrom);
-//     const tillDate = new Date(validTill);
+    if (!trip) return res.status(404).json({ message: "Trip not found" });
 
-//     if (isNaN(fromDate) || isNaN(tillDate)) {
-//       return res.status(400).json({ message: "Invalid date range" });
-//     }
+    // Build options grouped by category with a price that matches this date
+    const byCategory = {};
+    for (const row of trip.vehicles || []) {
+      if (!row || !row.vehicle) continue;
 
-//     const formattedDays = days.map((day, index) => ({
-//       ...day,
-//       dayLabel: `Day ${index + 1}`,
-//     }));
+      // Pick a price that matches the date
+      const match = (row.prices || []).find((p) =>
+        inRange(dayDate, p.validFrom, p.validTo)
+      );
+      if (!match) continue;
 
-//     const newTour = new FixedTour({
-//       purchaser: purchaserId,
-//       company,
-//       country,
-//       state,
-//       destination,
-//       tourName,
-//       articleNumber,
-//       category,
-//       pickupPoint,
-//       dropOffPoint,
-//       totalDays,
-//       totalNights,
-//       validFrom: fromDate,
-//       validTill: tillDate,
-//       paxPrices,
-//       includes,
-//       excludes,
-//       days: formattedDays,
-//     });
+      const vehDoc = row.vehicle;
+      const entry = {
+        vehicleId: vehDoc?._id,
+        vehicleName: vehDoc?.vehicle, // Vehicle.vehicle (string)
+        percentage: Number(vehDoc?.percentage ?? 0),
+        basePrice: Number(match.price), // BO base price (per unit)
+        vendor: row.vendor || null, // optional
+      };
 
-//     await newTour.save();
+      if (!byCategory[row.category]) byCategory[row.category] = [];
+      byCategory[row.category].push(entry);
+    }
 
-//     return res.status(201).json({
-//       message: "Fixed Tour created successfully",
-//       tourId: newTour._id,
-//     });
-//   } catch (err) {
-//     console.error("Fixed tour creation error:", err.message);
-//     return res.status(500).json({ message: "Failed to create fixed tour" });
-//   }
-// };
-// export const getFixedTours = async (req, res) => {
-//   try {
-//     const purchaserId = req.userId; // From verifyUser middleware
-//     const purchaser = await Purchaser.findById(purchaserId);
-//     if (!purchaser) {
-//       return res
-//         .status(404)
-//         .json({ message: "Unauthorized: Purchaser not found or inactive." });
-//     }
-//     const { page = 1, limit = 3, search = "" } = req.query;
+    const categories = Object.keys(byCategory);
+    return res
+      .status(200)
+      .json({ tripId, date, categories, options: byCategory });
+  } catch (err) {
+    console.error("getTripVehiclesForDate error:", err);
+    return res
+      .status(500)
+      .json({ message: "Server error while fetching trip vehicles." });
+  }
+};
+export const getTripFoodsForDate = async (req, res) => {
+  try {
+    const purchaserId = req.userId;
+    const { tripId } = req.params;
+    const { date } = req.query;
 
-//     const query = {
-//       purchaser: purchaserId,
-//       tourName: { $regex: search, $options: "i" },
-//     };
+    if (!date)
+      return res
+        .status(400)
+        .json({ message: "date query (YYYY-MM-DD) is required" });
+    const dayDate = new Date(date);
+    if (isNaN(dayDate))
+      return res.status(400).json({ message: "Invalid date" });
 
-//     const totalTours = await FixedTour.countDocuments(query);
-//     const totalPages = Math.ceil(totalTours / limit);
+    const purchaser = await Purchaser.findById(purchaserId);
+    if (!purchaser) {
+      return res
+        .status(404)
+        .json({ message: "Unauthorized: Purchaser not found or inactive." });
+    }
 
-//     const tours = await FixedTour.find(query)
-//       .sort({ createdAt: -1 })
-//       .skip((page - 1) * limit)
-//       .limit(parseInt(limit));
+    // Find a Food doc for this trip (active) belonging to this purchaser
+    const foodDoc = await Food.findOne({
+      trip: tripId,
+      purchaser: purchaserId,
+      activeStatus: { $ne: false },
+    })
+      .populate("rows.vendor", "name")
+      .lean();
 
-//     res.status(200).json({ tours, totalPages });
-//   } catch (error) {
-//     console.error("Error fetching fixed tours:", error);
-//     res.status(500).json({ error: "Server error while fetching fixed tours." });
-//   }
-// };
+    if (!foodDoc) {
+      return res.status(200).json({
+        tripId,
+        date,
+        categories: [],
+        typesByCategory: {},
+        options: {},
+      });
+    }
 
-// export const updateFixedTour = async (req, res) => {
-//   try {
-//     const tourId = req.params.id;
-//     const purchaserId = req.userId;
+    const byCategoryType = {}; // { [category]: { [type]: [items] } }
+    const categoriesSet = new Set();
+    const typesByCategory = {}; // { [category]: [types...] }
 
-//     const purchaser = await Purchaser.findById(purchaserId);
-//     if (!purchaser) {
-//       return res.status(404).json({ message: "Purchaser not found" });
-//     }
+    for (const row of foodDoc.rows || []) {
+      const {
+        vendor,
+        mealType,
+        mealCategory,
+        foodName,
+        description,
+        prices = [],
+      } = row;
 
-//     const {
-//       country,
-//       state,
-//       destination,
-//       tourName,
-//       articleNumber,
-//       category,
-//       pickupPoint,
-//       dropOffPoint,
-//       totalDays,
-//       totalNights,
-//       validFrom,
-//       validTill,
-//       paxPrices,
-//       includes,
-//       excludes,
-//       days,
-//     } = req.body;
+      // Find a price that matches this date
+      const match = prices.find((p) =>
+        inRange(dayDate, p.validFrom, p.validTo)
+      );
+      if (!match) continue;
 
-//     if (!Array.isArray(days)) {
-//       return res.status(400).json({ message: "Invalid itinerary days format" });
-//     }
+      const item = {
+        foodName,
+        description: description || "",
+        price: Number(match.price || 0),
+        percent: Number(match.percent || 0),
+        itineraryPrice: Number(match.itineraryPrice || 0),
+        vendor: vendor?._id || null,
+        vendorName: vendor?.name || "",
+      };
 
-//     const fromDate = new Date(validFrom);
-//     const tillDate = new Date(validTill);
+      categoriesSet.add(mealCategory || "Uncategorized");
 
-//     if (isNaN(fromDate) || isNaN(tillDate)) {
-//       return res.status(400).json({ message: "Invalid date range" });
-//     }
+      if (!byCategoryType[mealCategory]) byCategoryType[mealCategory] = {};
+      if (!byCategoryType[mealCategory][mealType])
+        byCategoryType[mealCategory][mealType] = [];
+      byCategoryType[mealCategory][mealType].push(item);
+    }
 
-//     const formattedDays = days.map((day, index) => ({
-//       ...day,
-//       dayLabel: `Day ${index + 1}`,
-//     }));
+    // Build typesByCategory lists
+    for (const cat of Object.keys(byCategoryType)) {
+      typesByCategory[cat] = Object.keys(byCategoryType[cat]);
+    }
 
-//     const updatedTour = await FixedTour.findByIdAndUpdate(
-//       tourId,
-//       {
-//         country,
-//         state,
-//         destination,
-//         tourName,
-//         articleNumber,
-//         category,
-//         pickupPoint,
-//         dropOffPoint,
-//         totalDays,
-//         totalNights,
-//         validFrom: fromDate,
-//         validTill: tillDate,
-//         paxPrices,
-//         includes,
-//         excludes,
-//         days: formattedDays,
-//       },
-//       { new: true }
-//     );
+    return res.status(200).json({
+      tripId,
+      date,
+      categories: Array.from(categoriesSet),
+      typesByCategory,
+      options: byCategoryType, // category -> type -> [items]
+    });
+  } catch (err) {
+    console.error("getTripFoodsForDate error:", err);
+    return res
+      .status(500)
+      .json({ message: "Server error while fetching trip foods." });
+  }
+};
+export const getAddonTripVehiclesForDate = async (req, res) => {
+  try {
+    const purchaserId = req.userId;
+    const { addonTripId } = req.params;
+    const { date } = req.query;
 
-//     if (!updatedTour) {
-//       return res.status(404).json({ message: "Fixed tour not found" });
-//     }
+    if (!date)
+      return res
+        .status(400)
+        .json({ message: "date query (YYYY-MM-DD) is required" });
+    const dayDate = new Date(date);
+    if (isNaN(dayDate))
+      return res.status(400).json({ message: "Invalid date" });
 
-//     return res.status(200).json({ message: "Fixed Tour updated successfully" });
-//   } catch (err) {
-//     console.error("Error updating fixed tour:", err.message);
-//     return res.status(500).json({ message: "Failed to update fixed tour" });
-//   }
-// };
-// CREATE
+    const purchaser = await Purchaser.findById(purchaserId);
+    if (!purchaser) {
+      return res
+        .status(404)
+        .json({ message: "Unauthorized: Purchaser not found or inactive." });
+    }
+
+    const addon = await AddOnTrip.findOne({
+      _id: addonTripId,
+      purchaser: purchaserId,
+    })
+      .populate({
+        path: "vehicles.vehicle",
+        select: "vehicle percentage", // from Vehicle model
+      })
+      .lean();
+
+    if (!addon)
+      return res.status(404).json({ message: "Add-on trip not found" });
+
+    const byCategory = {};
+    for (const row of addon.vehicles || []) {
+      if (!row || !row.vehicle) continue;
+
+      // choose price for the given date
+      const matched = (row.prices || []).find((p) =>
+        inRange(dayDate, p.validFrom, p.validTo)
+      );
+      if (!matched) continue;
+
+      const vehDoc = row.vehicle;
+      const entry = {
+        vehicleId: vehDoc?._id,
+        vehicleName: vehDoc?.vehicle,
+        percentage: Number(vehDoc?.percentage ?? 0),
+        basePrice: Number(matched.price),
+        vendor: row.vendor || null,
+      };
+
+      if (!byCategory[row.category]) byCategory[row.category] = [];
+      byCategory[row.category].push(entry);
+    }
+
+    return res.status(200).json({
+      addonTripId,
+      date,
+      categories: Object.keys(byCategory),
+      options: byCategory,
+    });
+  } catch (err) {
+    console.error("getAddonTripVehiclesForDate error:", err);
+    return res
+      .status(500)
+      .json({ message: "Server error while fetching add-on vehicles." });
+  }
+};
+export const getActivitiesPricingForDate = async (req, res) => {
+  try {
+    const purchaserId = req.userId;
+    const { ids, date } = req.query;
+
+    if (!date)
+      return res
+        .status(400)
+        .json({ message: "date query (YYYY-MM-DD) is required" });
+    const dayDate = new Date(date);
+    if (isNaN(dayDate))
+      return res.status(400).json({ message: "Invalid date" });
+
+    if (!ids)
+      return res
+        .status(400)
+        .json({
+          message: "ids query is required (comma separated activity ids)",
+        });
+    const idList = ids
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (!idList.length)
+      return res.status(400).json({ message: "No valid ids provided" });
+
+    const purchaser = await Purchaser.findById(purchaserId);
+    if (!purchaser) {
+      return res
+        .status(404)
+        .json({ message: "Unauthorized: Purchaser not found or inactive." });
+    }
+
+    const acts = await Activity.find({
+      _id: { $in: idList },
+      purchaser: purchaserId,
+      activeStatus: { $ne: false },
+    })
+      .populate("vendor", "name")
+      .lean();
+
+    const items = [];
+    for (const a of acts) {
+      // 👇 uses your inRange(d, from, to)
+      const match = (a.prices || []).find((p) =>
+        inRange(dayDate, p.validFrom, p.validTo)
+      );
+      if (!match) continue;
+
+      const base = Number(match.price || 0);
+      const perc = Number(match.percentage || 0);
+      const itin =
+        match.itineraryPrice != null && !isNaN(match.itineraryPrice)
+          ? Number(match.itineraryPrice)
+          : Math.round(base * (1 + perc / 100));
+
+      items.push({
+        activityId: String(a._id),
+        activityName: a.activityName,
+        price: base,
+        percentage: perc,
+        itineraryPrice: itin,
+        vendorId: a.vendor?._id || null,
+        vendorName: a.vendor?.name || "",
+      });
+    }
+
+    return res.status(200).json({ date, items });
+  } catch (err) {
+    console.error("getActivitiesPricingForDate error:", err);
+    return res
+      .status(500)
+      .json({ message: "Server error while fetching activities pricing." });
+  }
+};
+export const getAccommodationsPricingForDate = async (req, res) => {
+  try {
+    const purchaserId = req.userId;
+    const { destinationId, date } = req.query;
+
+    if (!destinationId)
+      return res.status(400).json({ message: "destinationId is required" });
+    if (!date)
+      return res.status(400).json({ message: "date (YYYY-MM-DD) is required" });
+
+    const dayDate = new Date(date);
+    if (isNaN(dayDate))
+      return res.status(400).json({ message: "Invalid date" });
+
+    const purchaser = await Purchaser.findById(purchaserId).lean();
+    if (!purchaser) {
+      return res
+        .status(404)
+        .json({ message: "Unauthorized: Purchaser not found or inactive." });
+    }
+
+    // Pull candidate accommodations for that destination and purchaser
+    const accs = await Accommodation.find({
+      destination: destinationId,
+      purchaserId: purchaserId, // matches your schema field name
+    })
+      .populate("vendor", "name")
+      .lean();
+
+    // Known "room type" numeric keys we care about
+    const ROOM_KEYS = [
+      "2BEDEP",
+      "2BEDCP",
+      "2BEDMAP",
+      "3BEDEP",
+      "3BEDCP",
+      "3BEDMAP",
+      "4BEDEP",
+      "4BEDCP",
+      "4BEDMAP",
+      "EXTRABEDEP",
+      "EXTRABEDCP",
+      "EXTRABEDMAP",
+      "FRESHUP",
+      "EARLYCHECKIN",
+      "LATECHECKOUT",
+    ];
+
+    const items = [];
+
+    for (const a of accs) {
+      const baseSection = (a.formSections || []).find((ps) =>
+        inRange(dayDate, ps?.validFrom, ps?.validTo)
+      );
+      const commSection = (a.formSectionsWithCommission || []).find((ps) =>
+        inRange(dayDate, ps?.validFrom, ps?.validTo)
+      );
+      if (!baseSection || !commSection) continue;
+
+      const roomTypes = [];
+      for (const key of ROOM_KEYS) {
+        const boVal = Number(baseSection[key] ?? 0);
+        const itinVal = Number(commSection[key] ?? 0);
+        if (!Number.isFinite(boVal) || boVal <= 0) continue; // only non-zero/positive
+        // push room type option
+        roomTypes.push({
+          code: key,
+          label: key, // keep code as label (you can prettify if you like)
+          bo: boVal,
+          itinerary: Number.isFinite(itinVal)
+            ? itinVal
+            : Math.round(
+                boVal * (1 + Number(baseSection.commission || 0) / 100)
+              ),
+        });
+      }
+      if (!roomTypes.length) continue;
+
+      items.push({
+        accommodationId: String(a._id),
+        propertyName: a.propertyName,
+        hotelCategory: a.hotelCategory || "",
+        roomCategory: a.roomCategory || "",
+        vendorId: a.vendor?._id || null,
+        vendorName: a.vendor?.name || "",
+        commission: Number(
+          a?.formSections?.length ? baseSection.commission || 0 : 0
+        ),
+        roomTypes,
+      });
+    }
+
+    return res.status(200).json({
+      destinationId,
+      date,
+      properties: items,
+    });
+  } catch (err) {
+    console.error("getAccommodationsPricingForDate error:", err);
+    return res
+      .status(500)
+      .json({ message: "Server error while fetching accommodations pricing." });
+  }
+};
+
 export const createFixedTour = async (req, res) => {
   try {
     const purchaserId = req.userId;
     const purchaser = await Purchaser.findById(purchaserId);
-    if (!purchaser) return res.status(404).json({ message: "Purchaser not found" });
+    if (!purchaser)
+      return res.status(404).json({ message: "Purchaser not found" });
 
     const company = purchaser.company;
-
     const {
-      country, state, destination,
-      tourName, articleNumber, category,
-      pickupPoint, dropOffPoint,
-      totalDays, totalNights,
-      validFrom, validTill,
-      paxPrices, includes, excludes,
+      country,
+      state,
+      destination,
+      tourName,
+      category,
+      pickupPoint,
+      dropOffPoint,
+      totalDays,
+      totalNights,
+      validFrom,
+      validTill,
+      paxPrices,
+      includes,
+      excludes,
       days,
     } = req.body;
 
@@ -2402,7 +2490,9 @@ export const createFixedTour = async (req, res) => {
     // Validate each day has segments array
     for (let i = 0; i < days.length; i++) {
       if (!Array.isArray(days[i].segments) || days[i].segments.length === 0) {
-        return res.status(400).json({ message: `Day ${i + 1} requires at least one segment` });
+        return res
+          .status(400)
+          .json({ message: `Day ${i + 1} requires at least one segment` });
       }
     }
 
@@ -2419,23 +2509,41 @@ export const createFixedTour = async (req, res) => {
           : [],
       })),
     }));
+    const counter = await Counter.findOneAndUpdate(
+      { company },
+      { $inc: { TourSequence: 1 } },
+      { new: true, upsert: true }
+    );
+    const articleNumber = buildArticleNumber(tourName, counter.TourSequence);
 
     const newTour = new FixedTour({
       purchaser: purchaserId,
       company,
-      country, state, destination,
-      tourName, articleNumber, category,
-      pickupPoint, dropOffPoint,
-      totalDays, totalNights,
+      country,
+      state,
+      destination,
+      tourName,
+      articleNumber,
+      category,
+      pickupPoint,
+      dropOffPoint,
+      totalDays,
+      totalNights,
       validFrom: fromDate,
       validTill: tillDate,
       paxPrices,
-      includes, excludes,
+      includes,
+      excludes,
       days: formattedDays,
     });
 
     await newTour.save();
-    return res.status(201).json({ message: "Fixed Tour created successfully", tourId: newTour._id });
+    return res
+      .status(201)
+      .json({
+        message: "Fixed Tour created successfully",
+        tourId: newTour._id,
+      });
   } catch (err) {
     console.error("Fixed tour creation error:", err);
     return res.status(500).json({ message: "Failed to create fixed tour" });
@@ -2448,7 +2556,9 @@ export const getFixedTours = async (req, res) => {
     const purchaserId = req.userId;
     const purchaser = await Purchaser.findById(purchaserId);
     if (!purchaser) {
-      return res.status(404).json({ message: "Unauthorized: Purchaser not found or inactive." });
+      return res
+        .status(404)
+        .json({ message: "Unauthorized: Purchaser not found or inactive." });
     }
 
     const { page = 1, limit = 3, search = "" } = req.query;
@@ -2479,15 +2589,25 @@ export const updateFixedTour = async (req, res) => {
     const purchaserId = req.userId;
 
     const purchaser = await Purchaser.findById(purchaserId);
-    if (!purchaser) return res.status(404).json({ message: "Purchaser not found" });
+    if (!purchaser)
+      return res.status(404).json({ message: "Purchaser not found" });
 
     const {
-      country, state, destination,
-      tourName, articleNumber, category,
-      pickupPoint, dropOffPoint,
-      totalDays, totalNights,
-      validFrom, validTill,
-      paxPrices, includes, excludes,
+      country,
+      state,
+      destination,
+      tourName,
+      articleNumber,
+      category,
+      pickupPoint,
+      dropOffPoint,
+      totalDays,
+      totalNights,
+      validFrom,
+      validTill,
+      paxPrices,
+      includes,
+      excludes,
       days,
     } = req.body;
 
@@ -2497,7 +2617,9 @@ export const updateFixedTour = async (req, res) => {
 
     for (let i = 0; i < days.length; i++) {
       if (!Array.isArray(days[i].segments) || days[i].segments.length === 0) {
-        return res.status(400).json({ message: `Day ${i + 1} requires at least one segment` });
+        return res
+          .status(400)
+          .json({ message: `Day ${i + 1} requires at least one segment` });
       }
     }
 
@@ -2524,20 +2646,34 @@ export const updateFixedTour = async (req, res) => {
     const updatedTour = await FixedTour.findByIdAndUpdate(
       tourId,
       {
-        country, state, destination,
-        tourName, articleNumber, category,
-        pickupPoint, dropOffPoint,
-        totalDays, totalNights,
+        country,
+        state,
+        destination,
+        tourName,
+        articleNumber,
+        category,
+        pickupPoint,
+        dropOffPoint,
+        totalDays,
+        totalNights,
         validFrom: fromDate,
         validTill: tillDate,
-        paxPrices, includes, excludes,
+        paxPrices,
+        includes,
+        excludes,
         days: formattedDays,
       },
       { new: true }
     );
 
-    if (!updatedTour) return res.status(404).json({ message: "Fixed tour not found" });
-    return res.status(200).json({ message: "Fixed Tour updated successfully", tourId: updatedTour._id });
+    if (!updatedTour)
+      return res.status(404).json({ message: "Fixed tour not found" });
+    return res
+      .status(200)
+      .json({
+        message: "Fixed Tour updated successfully",
+        tourId: updatedTour._id,
+      });
   } catch (err) {
     console.error("Error updating fixed tour:", err);
     return res.status(500).json({ message: "Failed to update fixed tour" });
@@ -2661,7 +2797,7 @@ export const getFoodTrips = async (req, res) => {
       country: food.country?.name || "N/A",
       state: food.state?.name || "N/A",
       destination: food.destination?.name || "N/A",
-       activeStatus: !!food.activeStatus,
+      activeStatus: !!food.activeStatus,
     }));
 
     res.status(200).json({ trips, totalPages });

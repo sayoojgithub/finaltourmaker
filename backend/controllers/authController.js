@@ -126,6 +126,7 @@ import CreativeStaff from "../models/creativeStaffModel.js";
 import Entry from "../models/entryModel.js";
 import FrontOfficer from "../models/frontOfficerModel.js";
 import FrontOfficerManager from "../models/frontOfficerManagerModel.js";
+import Executive from "../models/executiveModel.js"
 
 export const login = async (req, res) => {
   const { email, password } = req.body;
@@ -146,6 +147,7 @@ export const login = async (req, res) => {
       { model: Entry, role:"entry"},
       { model: FrontOfficer, role:"frontofficer"},
       { model: FrontOfficerManager, role:"frontofficermanager"},
+      { model: Executive , role:"executive"}
     ];
 
     let user = null;

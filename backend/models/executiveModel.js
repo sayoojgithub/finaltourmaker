@@ -31,7 +31,7 @@ const executiveSchema = new mongoose.Schema({
   status: { type: String, enum: ['Active', 'Inactive'], default: 'Active' },
   profileImage: { type: String, default: "" },
   createdAt: { type: Date, default: Date.now },
-
+  clientAssignedCount: { type: Number, default: 0 },
     // 🔽 NEW: assignment preference arrays
   prefTourCategories: { type: [OptionSchema], default: [] },            // grouptour/fixedtour/customtour
   prefPrimaryDestinations: { type: [DestinationSchema], default: [] },  // {_id,value,label}

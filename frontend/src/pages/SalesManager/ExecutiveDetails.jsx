@@ -92,7 +92,7 @@ export default function ExecutiveDetails({ id, onBack }) {
   // helpers
   const addOption = (list, setList, candidate, setCandidate) => {
     if (!candidate?.value) return;
-    const key = String(candidate.value).trim().toLowerCase();
+    const key = String(candidate.value).trim();
     if (list.some((o) => String(o.value).toLowerCase() === key)) return;
     setList([...list, { value: key, label: candidate.label || candidate.value }]);
     setCandidate(null);

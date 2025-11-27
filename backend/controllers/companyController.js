@@ -1097,6 +1097,29 @@ export async function assignPincodes(req, res) {
 
     const companyId = req.companyId || req.user?.companyId || req.userId;
     if (!isObjId(companyId)) return res.status(401).json({ message: "Company context missing" });
+    // 🔹 Check for sales manager for this branch/franchisee first
+    const smFilter = {
+      company: companyId,
+      status: "Active",
+    };
+
+    if (type === "branch") {
+      smFilter.type = "Branch";
+      smFilter.branch = id;
+    } else {
+      smFilter.type = "Franchisee";
+      smFilter.franchisee = id;
+    }
+
+    const hasSalesManager = await SalesManager.exists(smFilter);
+
+    if (!hasSalesManager) {
+      const label = type === "branch" ? "branch" : "franchisee";
+      return res.status(400).json({
+        message: `Create a sales manager first`,
+        code: "SALES_MANAGER_REQUIRED",
+      });
+    }
 
     const pins = normalizePincodesSix(req.body.pincodes);
     if (!pins.length) {
