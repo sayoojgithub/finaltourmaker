@@ -273,8 +273,41 @@ export const getDestinations = async (req, res) => {
   }
 };
 
+// export const getDestinationsByCountryAndState = async (req, res) => {
+//   const { countryId, stateId } = req.params;
+//   const purchaserId = req.userId;
+
+//   try {
+//     const purchaser = await Purchaser.findById(purchaserId);
+//     if (!purchaser) {
+//       return res
+//         .status(404)
+//         .json({ message: "Unauthorized: Purchaser not found or inactive." });
+//     }
+
+//     const companyId = purchaser.company;
+
+//     const destinations = await Destination.find({
+//       purchaser: purchaserId,
+//       company: companyId,
+//       country: countryId,
+//       state: stateId,
+//       activeStatus: true,
+//     }).select("_id name");
+
+//     res.status(200).json(destinations);
+//   } catch (err) {
+//     console.error("Error fetching destinations:", err);
+//     res
+//       .status(500)
+//       .json({ message: "Server error while fetching destinations" });
+//   }
+// };
+
+//for fetching activestatus false destinations also in case of the edit//
 export const getDestinationsByCountryAndState = async (req, res) => {
   const { countryId, stateId } = req.params;
+  let { currentDestinationId } = req.query; // 👈 NEW
   const purchaserId = req.userId;
 
   try {
@@ -287,13 +320,45 @@ export const getDestinationsByCountryAndState = async (req, res) => {
 
     const companyId = purchaser.company;
 
-    const destinations = await Destination.find({
+    // normalize weird values from query string
+    if (
+      currentDestinationId === "undefined" ||
+      currentDestinationId === "null" ||
+      currentDestinationId === ""
+    ) {
+      currentDestinationId = undefined;
+    }
+
+    // 1) all ACTIVE destinations
+    let destinations = await Destination.find({
       purchaser: purchaserId,
       company: companyId,
       country: countryId,
       state: stateId,
       activeStatus: true,
-    }).select("_id name");
+    }).select("_id name activeStatus"); // 👈 include activeStatus for UI label
+
+    // 2) if editing: include current destination even if inactive
+    if (currentDestinationId) {
+      const exists = destinations.some(
+        (d) => d._id.toString() === currentDestinationId.toString()
+      );
+
+      if (!exists) {
+        const currentDest = await Destination.findOne({
+          _id: currentDestinationId,
+          purchaser: purchaserId,
+          company: companyId,
+          country: countryId,
+          state: stateId,
+          // NOTE: no activeStatus filter → can be inactive
+        }).select("_id name activeStatus");
+
+        if (currentDest) {
+          destinations.push(currentDest);
+        }
+      }
+    }
 
     res.status(200).json(destinations);
   } catch (err) {
@@ -449,23 +514,149 @@ export const updateVendorStatus = async (req, res) => {
   }
 };
 
+// export const getVendorsOfVehiclesByLocation = async (req, res) => {
+//   try {
+//     const purchaserId = req.userId;
+//     const purchaser = await Purchaser.findById(purchaserId);
+//     if (!purchaser) {
+//       return res
+//         .status(404)
+//         .json({ message: "Unauthorized: Purchaser not found or inactive." });
+//     }
+//     const { countryId, stateId, destinationId } = req.params;
+//     const vendors = await Vendor.find({
+//       purchaser: purchaserId,
+//       country: countryId,
+//       state: stateId,
+//       destination: destinationId,
+//       activeStatus:true,
+//       services: "Vehicle",
+//     }).select("_id name");
+
+//     res.status(200).json(vendors);
+//   } catch (error) {
+//     console.error("Error fetching vendors:", error);
+//     res.status(500).json({ message: "Failed to fetch vendors" });
+//   }
+// };
+
+// export const getVendorsOfVehiclesByLocation = async (req, res) => {
+//   try {
+//     const purchaserId = req.userId;
+//     const purchaser = await Purchaser.findById(purchaserId);
+//     if (!purchaser) {
+//       return res
+//         .status(404)
+//         .json({ message: "Unauthorized: Purchaser not found or inactive." });
+//     }
+
+//     const { countryId, stateId, destinationId } = req.params;
+//     let { currentVendorId } = req.query; // 👈 NEW
+
+//     // normalize possible string junk
+//     if (
+//       currentVendorId === "undefined" ||
+//       currentVendorId === "null" ||
+//       currentVendorId === ""
+//     ) {
+//       currentVendorId = undefined;
+//     }
+
+//     // 1) all ACTIVE vendors for Vehicle service
+//     let vendors = await Vendor.find({
+//       purchaser: purchaserId,
+//       country: countryId,
+//       state: stateId,
+//       destination: destinationId,
+//       activeStatus: true,
+//       services: "Vehicle",
+//     }).select("_id name activeStatus"); // 👈 include activeStatus for UI
+
+//     // 2) if editing, ensure current vendor is also included (even if inactive)
+//     if (currentVendorId) {
+//       const exists = vendors.some(
+//         (v) => v._id.toString() === currentVendorId.toString()
+//       );
+
+//       if (!exists) {
+//         const currentVendor = await Vendor.findOne({
+//           _id: currentVendorId,
+//           purchaser: purchaserId,
+//           country: countryId,
+//           state: stateId,
+//           destination: destinationId,
+//           services: "Vehicle",
+//           // NOTE: no activeStatus filter → can be inactive
+//         }).select("_id name activeStatus");
+
+//         if (currentVendor) {
+//           vendors.push(currentVendor);
+//         }
+//       }
+//     }
+
+//     res.status(200).json(vendors);
+//   } catch (error) {
+//     console.error("Error fetching vendors:", error);
+//     res.status(500).json({ message: "Failed to fetch vendors" });
+//   }
+// };
 export const getVendorsOfVehiclesByLocation = async (req, res) => {
   try {
     const purchaserId = req.userId;
+    const { countryId, stateId, destinationId } = req.params;
+    let { currentVendorId } = req.query; // can be "id1,id2"
+
     const purchaser = await Purchaser.findById(purchaserId);
     if (!purchaser) {
       return res
         .status(404)
         .json({ message: "Unauthorized: Purchaser not found or inactive." });
     }
-    const { countryId, stateId, destinationId } = req.params;
-    const vendors = await Vendor.find({
+
+    // normalize possible string junk
+    if (
+      currentVendorId === "undefined" ||
+      currentVendorId === "null" ||
+      currentVendorId === ""
+    ) {
+      currentVendorId = undefined;
+    }
+
+    const forcedVendorIds = currentVendorId
+      ? currentVendorId.split(",").filter(Boolean)
+      : [];
+
+    // 1) all ACTIVE vendors for Vehicle service
+    let vendors = await Vendor.find({
       purchaser: purchaserId,
       country: countryId,
       state: stateId,
       destination: destinationId,
+      activeStatus: true,
       services: "Vehicle",
-    }).select("_id name");
+    }).select("_id name activeStatus"); // include activeStatus for UI
+
+    // 2) if editing, ensure current vendor(s) are also included (even if inactive)
+    if (forcedVendorIds.length > 0) {
+      const existingIds = new Set(vendors.map((v) => v._id.toString()));
+
+      const extraVendors = await Vendor.find({
+        _id: { $in: forcedVendorIds },
+        purchaser: purchaserId,
+        country: countryId,
+        state: stateId,
+        destination: destinationId,
+        services: "Vehicle",
+        // NOTE: no activeStatus filter → can be inactive
+      }).select("_id name activeStatus");
+
+      for (const v of extraVendors) {
+        if (!existingIds.has(v._id.toString())) {
+          vendors.push(v);
+        }
+      }
+    }
 
     res.status(200).json(vendors);
   } catch (error) {
@@ -672,23 +863,85 @@ export const updateVehicleStatus = async (req, res) => {
   }
 };
 
+// export const getVendorsOfHotelsByLocation = async (req, res) => {
+//   try {
+//     const purchaserId = req.userId;
+//     const { countryId, stateId, destinationId } = req.params;
+//     const purchaser = await Purchaser.findById(purchaserId);
+//     if (!purchaser) {
+//       return res
+//         .status(404)
+//         .json({ message: "Unauthorized: Purchaser not found or inactive." });
+//     }
+//     const vendors = await Vendor.find({
+//       purchaser: purchaserId,
+//       country: countryId,
+//       state: stateId,
+//       destination: destinationId,
+//       activeStatus: true,
+//       services: "Hotels",
+//     }).select("_id name");
+
+//     res.status(200).json(vendors);
+//   } catch (error) {
+//     console.error("Error fetching vendors:", error);
+//     res.status(500).json({ message: "Failed to fetch vendors" });
+//   }
+// };
 export const getVendorsOfHotelsByLocation = async (req, res) => {
   try {
     const purchaserId = req.userId;
     const { countryId, stateId, destinationId } = req.params;
+    let { currentVendorId } = req.query; // 👈 NEW
+
     const purchaser = await Purchaser.findById(purchaserId);
     if (!purchaser) {
       return res
         .status(404)
         .json({ message: "Unauthorized: Purchaser not found or inactive." });
     }
-    const vendors = await Vendor.find({
+
+    // normalize junk
+    if (
+      currentVendorId === "undefined" ||
+      currentVendorId === "null" ||
+      currentVendorId === ""
+    ) {
+      currentVendorId = undefined;
+    }
+
+    // 1) active hotel vendors
+    let vendors = await Vendor.find({
       purchaser: purchaserId,
       country: countryId,
       state: stateId,
       destination: destinationId,
+      activeStatus: true,
       services: "Hotels",
-    }).select("_id name");
+    }).select("_id name activeStatus"); // 👈 include activeStatus
+
+    // 2) if editing, include current vendor even if inactive
+    if (currentVendorId) {
+      const exists = vendors.some(
+        (v) => v._id.toString() === currentVendorId.toString()
+      );
+
+      if (!exists) {
+        const currentVendor = await Vendor.findOne({
+          _id: currentVendorId,
+          purchaser: purchaserId,
+          country: countryId,
+          state: stateId,
+          destination: destinationId,
+          services: "Hotels",
+          // no activeStatus filter → allow inactive
+        }).select("_id name activeStatus");
+
+        if (currentVendor) {
+          vendors.push(currentVendor);
+        }
+      }
+    }
 
     res.status(200).json(vendors);
   } catch (error) {
@@ -884,10 +1137,57 @@ export const updateAccommodation = async (req, res) => {
   }
 };
 
+// export const getVehiclesForTrip = async (req, res) => {
+//   try {
+//     const { country, state, destination, vendor } = req.params;
+//     const purchaserId = req.userId; // Provided by verifyUser middleware
+
+//     // Step 1: Find purchaser and its associated company
+//     const purchaser = await Purchaser.findById(purchaserId).select("company");
+
+//     if (!purchaser) {
+//       return res
+//         .status(404)
+//         .json({ message: "Unauthorized: Purchaser not found or inactive." });
+//     }
+
+//     const companyId = purchaser.company;
+
+//     // Step 2: Query vehicles with additional filters
+//     const vehicles = await Vehicle.find({
+//       country,
+//       state,
+//       destination,
+//       vendor,
+//       purchaser: purchaserId,
+//       company: companyId,
+//       activeStatus: true,
+//     }).select("category vehicle");
+
+//     res.json(vehicles);
+//   } catch (err) {
+//     console.error("Error fetching vehicles:", err);
+//     res.status(500).json({ error: "Failed to fetch vehicles" });
+//   }
+// };
 export const getVehiclesForTrip = async (req, res) => {
   try {
     const { country, state, destination, vendor } = req.params;
     const purchaserId = req.userId; // Provided by verifyUser middleware
+    let { currentVehicleIds } = req.query; // 👈 NEW (comma-separated IDs)
+
+    // normalize possible string junk
+    if (
+      currentVehicleIds === "undefined" ||
+      currentVehicleIds === "null" ||
+      currentVehicleIds === ""
+    ) {
+      currentVehicleIds = undefined;
+    }
+
+    const forcedIds = currentVehicleIds
+      ? currentVehicleIds.split(",").filter(Boolean)
+      : [];
 
     // Step 1: Find purchaser and its associated company
     const purchaser = await Purchaser.findById(purchaserId).select("company");
@@ -900,8 +1200,8 @@ export const getVehiclesForTrip = async (req, res) => {
 
     const companyId = purchaser.company;
 
-    // Step 2: Query vehicles with additional filters
-    const vehicles = await Vehicle.find({
+    // Step 2: ACTIVE vehicles
+    let vehicles = await Vehicle.find({
       country,
       state,
       destination,
@@ -909,7 +1209,29 @@ export const getVehiclesForTrip = async (req, res) => {
       purchaser: purchaserId,
       company: companyId,
       activeStatus: true,
-    }).select("category vehicle");
+    }).select("_id category vehicle activeStatus");
+
+    // Step 3: if editing – ensure current vehicle(s) are included even if inactive
+    if (forcedIds.length > 0) {
+      const alreadyIds = new Set(vehicles.map((v) => v._id.toString()));
+
+      const extraVehicles = await Vehicle.find({
+        _id: { $in: forcedIds },
+        country,
+        state,
+        destination,
+        vendor,
+        purchaser: purchaserId,
+        company: companyId,
+        // NOTE: no activeStatus filter here → can be inactive
+      }).select("_id category vehicle activeStatus");
+
+      for (const v of extraVehicles) {
+        if (!alreadyIds.has(v._id.toString())) {
+          vehicles.push(v);
+        }
+      }
+    }
 
     res.json(vehicles);
   } catch (err) {
@@ -1144,23 +1466,115 @@ export const updateTripStatus = async (req, res) => {
   }
 };
 
+// export const getVendorsOfActivitiesByLocation = async (req, res) => {
+//   try {
+//     const purchaserId = req.userId;
+//     const { countryId, stateId, destinationId } = req.params;
+//     const purchaser = await Purchaser.findById(purchaserId).lean();
+//     if (!purchaser) {
+//       return res
+//         .status(404)
+//         .json({ message: "Unauthorized: Purchaser not found or inactive." });
+//     }
+//     const vendors = await Vendor.find({
+//       purchaser: purchaserId,
+//       country: countryId,
+//       state: stateId,
+//       destination: destinationId,
+//       services: "Activities",
+//     }).select("_id name");
+
+//     res.status(200).json(vendors);
+//   } catch (error) {
+//     console.error("Error fetching vendors:", error);
+//     res.status(500).json({ message: "Failed to fetch vendors" });
+//   }
+// };
+
+// export const getTripsByLocation = async (req, res) => {
+//   try {
+//     const { countryId, stateId, destinationId } = req.params;
+//     const purchaserId = req.userId;
+
+//     // Get purchaser to find associated company
+//     const purchaser = await Purchaser.findById(purchaserId);
+//     if (!purchaser) {
+//       return res
+//         .status(404)
+//         .json({ message: "Unauthorized: Purchaser not found or inactive." });
+//     }
+
+//     const companyId = purchaser.company;
+
+//     const trips = await Trip.find({
+//       purchaser: purchaserId,
+//       company: companyId,
+//       country: countryId,
+//       state: stateId,
+//       destination: destinationId,
+//        activeStatus:true,
+//     }).select("_id tripName");
+
+//     res.status(200).json(trips);
+//   } catch (error) {
+//     console.error("Error fetching trips:", error);
+//     res.status(500).json({ error: "Failed to fetch trips" });
+//   }
+// };
 export const getVendorsOfActivitiesByLocation = async (req, res) => {
   try {
     const purchaserId = req.userId;
     const { countryId, stateId, destinationId } = req.params;
+    let { currentVendorId } = req.query; // 👈 NEW
+
     const purchaser = await Purchaser.findById(purchaserId).lean();
     if (!purchaser) {
       return res
         .status(404)
         .json({ message: "Unauthorized: Purchaser not found or inactive." });
     }
-    const vendors = await Vendor.find({
+
+    // normalize weird values
+    if (
+      currentVendorId === "undefined" ||
+      currentVendorId === "null" ||
+      currentVendorId === ""
+    ) {
+      currentVendorId = undefined;
+    }
+
+    // 1) all ACTIVE vendors for Activities
+    let vendors = await Vendor.find({
       purchaser: purchaserId,
       country: countryId,
       state: stateId,
       destination: destinationId,
       services: "Activities",
-    }).select("_id name");
+      activeStatus: true,
+    }).select("_id name activeStatus"); // 👈 include activeStatus
+
+    // 2) if editing: ensure current vendor is included even if inactive
+    if (currentVendorId) {
+      const exists = vendors.some(
+        (v) => v._id.toString() === currentVendorId.toString()
+      );
+
+      if (!exists) {
+        const currentVendor = await Vendor.findOne({
+          _id: currentVendorId,
+          purchaser: purchaserId,
+          country: countryId,
+          state: stateId,
+          destination: destinationId,
+          services: "Activities",
+          // no activeStatus filter → may be inactive
+        }).select("_id name activeStatus");
+
+        if (currentVendor) {
+          vendors.push(currentVendor);
+        }
+      }
+    }
 
     res.status(200).json(vendors);
   } catch (error) {
@@ -1172,7 +1586,17 @@ export const getVendorsOfActivitiesByLocation = async (req, res) => {
 export const getTripsByLocation = async (req, res) => {
   try {
     const { countryId, stateId, destinationId } = req.params;
+    let { currentTripId } = req.query; // 👈 NEW
     const purchaserId = req.userId;
+
+    // normalize weird values from query string
+    if (
+      currentTripId === "undefined" ||
+      currentTripId === "null" ||
+      currentTripId === ""
+    ) {
+      currentTripId = undefined;
+    }
 
     // Get purchaser to find associated company
     const purchaser = await Purchaser.findById(purchaserId);
@@ -1184,14 +1608,38 @@ export const getTripsByLocation = async (req, res) => {
 
     const companyId = purchaser.company;
 
-    const trips = await Trip.find({
+    // 1) all ACTIVE trips
+    let trips = await Trip.find({
       purchaser: purchaserId,
       company: companyId,
       country: countryId,
       state: stateId,
       destination: destinationId,
-      // activeStatus:true,
-    }).select("_id tripName");
+      activeStatus: true,
+    }).select("_id tripName activeStatus"); // 👈 include activeStatus
+
+    // 2) if editing: include current trip even if inactive
+    if (currentTripId) {
+      const exists = trips.some(
+        (t) => t._id.toString() === currentTripId.toString()
+      );
+
+      if (!exists) {
+        const currentTrip = await Trip.findOne({
+          _id: currentTripId,
+          purchaser: purchaserId,
+          company: companyId,
+          country: countryId,
+          state: stateId,
+          destination: destinationId,
+          // NOTE: no activeStatus filter → can be inactive
+        }).select("_id tripName activeStatus");
+
+        if (currentTrip) {
+          trips.push(currentTrip);
+        }
+      }
+    }
 
     res.status(200).json(trips);
   } catch (error) {
@@ -1588,10 +2036,56 @@ export const updateAddOnTripStatus = async (req, res) => {
   }
 };
 
+// export const getTripDetails = async (req, res) => {
+//   try {
+//     const { tripId } = req.params;
+//     const purchaserId = req.userId;
+//     const purchaser = await Purchaser.findById(purchaserId);
+//     if (!purchaser) {
+//       return res
+//         .status(404)
+//         .json({ message: "Unauthorized: Purchaser not found or inactive." });
+//     }
+
+//     // Fetch Add-On Trips
+//     const addonTrips = await AddOnTrip.find({
+//       purchaser: purchaserId,
+//       trip: tripId,
+//     }).select("_id addontripName");
+
+//     // Map to use consistent name key
+//     const formattedAddons = addonTrips.map((trip) => ({
+//       _id: trip._id,
+//       tripName: trip.addontripName,
+//     }));
+
+//     // Fetch Activities
+//     const activities = await Activity.find({
+//       purchaser: purchaserId,
+//       trip: tripId,
+//     }).select("_id activityName");
+
+//     const formattedActivities = activities.map((act) => ({
+//       _id: act._id,
+//       tripName: act.activityName,
+//     }));
+
+//     return res.json({
+//       addonTrips: formattedAddons,
+//       activities: formattedActivities,
+//     });
+//   } catch (err) {
+//     console.error("Error in getTripDetails:", err.message);
+//     res
+//       .status(500)
+//       .json({ message: "Server error while fetching trip details." });
+//   }
+// };
 export const getTripDetails = async (req, res) => {
   try {
     const { tripId } = req.params;
     const purchaserId = req.userId;
+
     const purchaser = await Purchaser.findById(purchaserId);
     if (!purchaser) {
       return res
@@ -1599,25 +2093,33 @@ export const getTripDetails = async (req, res) => {
         .json({ message: "Unauthorized: Purchaser not found or inactive." });
     }
 
-    // Fetch Add-On Trips
+    // ✅ 1) Fetch ONLY ACTIVE Add-On Trips for this trip & purchaser
     const addonTrips = await AddOnTrip.find({
       purchaser: purchaserId,
       trip: tripId,
+      activeStatus: { $ne: false }, // 👈 consider only active add-on trips
     }).select("_id addontripName");
 
-    // Map to use consistent name key
     const formattedAddons = addonTrips.map((trip) => ({
       _id: trip._id,
       tripName: trip.addontripName,
     }));
 
-    // Fetch Activities
-    const activities = await Activity.find({
+    // ✅ 2) Fetch ONLY ACTIVE Activities whose vendor is also ACTIVE
+    const rawActivities = await Activity.find({
       purchaser: purchaserId,
       trip: tripId,
-    }).select("_id activityName");
+      activeStatus: { $ne: false }, // 👈 only active activities
+    })
+      .populate("vendor", "activeStatus") // 👈 need vendor.activeStatus
+      .lean();
 
-    const formattedActivities = activities.map((act) => ({
+    // ✅ filter out activities with missing/inactive vendor
+    const filteredActivities = rawActivities.filter(
+      (act) => act.vendor && act.vendor.activeStatus !== false
+    );
+
+    const formattedActivities = filteredActivities.map((act) => ({
       _id: act._id,
       tripName: act.activityName,
     }));
@@ -1743,12 +2245,10 @@ export const createGroupTour = async (req, res) => {
     });
 
     await newTour.save();
-    return res
-      .status(201)
-      .json({
-        message: "Group Tour created successfully",
-        tourId: newTour._id,
-      });
+    return res.status(201).json({
+      message: "Group Tour created successfully",
+      tourId: newTour._id,
+    });
   } catch (err) {
     console.error("Group tour creation error:", err);
     return res.status(500).json({ message: "Failed to create group tour" });
@@ -1875,6 +2375,8 @@ export const saveGroupTourBO = async (req, res) => {
       foodLines = {},
       actLines = {},
       accLines = {},
+      totalBO,
+      totalItinerary,
     } = req.body || {};
 
     // Walk days/segments; segKey = `${i}-${j}`
@@ -1892,6 +2394,23 @@ export const saveGroupTourBO = async (req, res) => {
         seg.boAccommodations = normalize(accLines[key]);
       });
     });
+    /** 🔽 NEW: use totals to update tour fields */
+    const safeTotalBO = Number(totalBO || 0);
+    const safeTotalItinerary = Number(totalItinerary || 0);
+    const totalPax = Number(tour.totalPax || 0);
+
+    // netCost = total BO
+    tour.netCost = safeTotalBO;
+
+    // pricePerPax = ceil(totalItinerary / totalPax) (if pax > 0)
+    if (totalPax > 0 && safeTotalItinerary > 0) {
+      tour.pricePerPax = Math.ceil(safeTotalItinerary / totalPax);
+    } else {
+      tour.pricePerPax = 0; // or keep previous value if you prefer
+    }
+
+    // activate the tour
+    tour.activeStatus = true;
 
     await tour.save();
 
@@ -2018,12 +2537,10 @@ export const updateGroupTour = async (req, res) => {
     if (!updatedTour)
       return res.status(404).json({ message: "Tour not found" });
 
-    res
-      .status(200)
-      .json({
-        message: "Group Tour updated successfully",
-        tourId: updatedTour._id,
-      });
+    res.status(200).json({
+      message: "Group Tour updated successfully",
+      tourId: updatedTour._id,
+    });
   } catch (err) {
     console.error("Group tour update error:", err);
     res.status(500).json({ message: "Failed to update group tour" });
@@ -2039,19 +2556,95 @@ const inRange = (d, from, to) =>
  * Returns available categories and vehicles for that trip on the given date,
  * including vehicle percentage and base BO price (from Trip.vehicles[].prices[]).
  */
+// export const getTripVehiclesForDate = async (req, res) => {
+//   try {
+//     const purchaserId = req.userId;
+//     const { tripId } = req.params;
+//     const { date } = req.query;
+
+//     if (!date)
+//       return res
+//         .status(400)
+//         .json({ message: "date query (YYYY-MM-DD) is required" });
+//     const dayDate = new Date(date);
+//     if (isNaN(dayDate))
+//       return res.status(400).json({ message: "Invalid date" });
+
+//     const purchaser = await Purchaser.findById(purchaserId);
+//     if (!purchaser) {
+//       return res
+//         .status(404)
+//         .json({ message: "Unauthorized: Purchaser not found or inactive." });
+//     }
+
+//     const trip = await Trip.findOne({ _id: tripId, purchaser: purchaserId })
+//       .populate({
+//         path: "vehicles.vehicle",
+//         select: "vehicle percentage", // vehicle name + percentage (from Vehicle model)
+//       })
+//       .lean();
+
+//     if (!trip) return res.status(404).json({ message: "Trip not found" });
+
+//     // Build options grouped by category with a price that matches this date
+//     const byCategory = {};
+//     for (const row of trip.vehicles || []) {
+//       if (!row || !row.vehicle) continue;
+//        const vehDoc = row.vehicle;
+//       const vendorDoc = row.vendor; // populated above
+
+//       // ❌ skip if no vehicle or vehicle is inactive
+//       if (!vehDoc || vehDoc.activeStatus === false) continue;
+
+//       // ❌ skip if vendor missing or vendor inactive
+//       if (!vendorDoc || vendorDoc.activeStatus === false) continue;
+
+//       // Pick a price that matches the date
+//       const match = (row.prices || []).find((p) =>
+//         inRange(dayDate, p.validFrom, p.validTo)
+//       );
+//       if (!match) continue;
+
+//       // const vehDoc = row.vehicle;
+//       const entry = {
+//         vehicleId: vehDoc?._id,
+//         vehicleName: vehDoc?.vehicle, // Vehicle.vehicle (string)
+//         percentage: Number(vehDoc?.percentage ?? 0),
+//         basePrice: Number(match.price), // BO base price (per unit)
+//         vendor: row.vendor || null, // optional
+//       };
+
+//       if (!byCategory[row.category]) byCategory[row.category] = [];
+//       byCategory[row.category].push(entry);
+//     }
+
+//     const categories = Object.keys(byCategory);
+//     return res
+//       .status(200)
+//       .json({ tripId, date, categories, options: byCategory });
+//   } catch (err) {
+//     console.error("getTripVehiclesForDate error:", err);
+//     return res
+//       .status(500)
+//       .json({ message: "Server error while fetching trip vehicles." });
+//   }
+// };
 export const getTripVehiclesForDate = async (req, res) => {
   try {
     const purchaserId = req.userId;
     const { tripId } = req.params;
     const { date } = req.query;
 
-    if (!date)
+    if (!date) {
       return res
         .status(400)
         .json({ message: "date query (YYYY-MM-DD) is required" });
+    }
+
     const dayDate = new Date(date);
-    if (isNaN(dayDate))
+    if (isNaN(dayDate)) {
       return res.status(400).json({ message: "Invalid date" });
+    }
 
     const purchaser = await Purchaser.findById(purchaserId);
     if (!purchaser) {
@@ -2063,30 +2656,42 @@ export const getTripVehiclesForDate = async (req, res) => {
     const trip = await Trip.findOne({ _id: tripId, purchaser: purchaserId })
       .populate({
         path: "vehicles.vehicle",
-        select: "vehicle percentage", // vehicle name + percentage (from Vehicle model)
+        select: "vehicle percentage activeStatus", // ✅ include activeStatus
+      })
+      .populate({
+        path: "vehicles.vendor",
+        select: "activeStatus", // ✅ populate vendor & its activeStatus
       })
       .lean();
 
     if (!trip) return res.status(404).json({ message: "Trip not found" });
 
-    // Build options grouped by category with a price that matches this date
     const byCategory = {};
-    for (const row of trip.vehicles || []) {
-      if (!row || !row.vehicle) continue;
 
-      // Pick a price that matches the date
+    for (const row of trip.vehicles || []) {
+      if (!row) continue;
+
+      const vehDoc = row.vehicle; // populated above
+      const vendorDoc = row.vendor; // populated above
+
+      // ❌ skip if no vehicle or vehicle inactive
+      if (!vehDoc || vehDoc.activeStatus === false) continue;
+
+      // ❌ skip if no vendor or vendor inactive
+      if (!vendorDoc || vendorDoc.activeStatus === false) continue;
+
+      // pick matching price slab
       const match = (row.prices || []).find((p) =>
         inRange(dayDate, p.validFrom, p.validTo)
       );
       if (!match) continue;
 
-      const vehDoc = row.vehicle;
       const entry = {
         vehicleId: vehDoc?._id,
-        vehicleName: vehDoc?.vehicle, // Vehicle.vehicle (string)
+        vehicleName: vehDoc?.vehicle,
         percentage: Number(vehDoc?.percentage ?? 0),
-        basePrice: Number(match.price), // BO base price (per unit)
-        vendor: row.vendor || null, // optional
+        basePrice: Number(match.price),
+        vendor: vendorDoc?._id || null, // ✅ id of active vendor
       };
 
       if (!byCategory[row.category]) byCategory[row.category] = [];
@@ -2104,6 +2709,105 @@ export const getTripVehiclesForDate = async (req, res) => {
       .json({ message: "Server error while fetching trip vehicles." });
   }
 };
+
+// export const getTripFoodsForDate = async (req, res) => {
+//   try {
+//     const purchaserId = req.userId;
+//     const { tripId } = req.params;
+//     const { date } = req.query;
+
+//     if (!date)
+//       return res
+//         .status(400)
+//         .json({ message: "date query (YYYY-MM-DD) is required" });
+//     const dayDate = new Date(date);
+//     if (isNaN(dayDate))
+//       return res.status(400).json({ message: "Invalid date" });
+
+//     const purchaser = await Purchaser.findById(purchaserId);
+//     if (!purchaser) {
+//       return res
+//         .status(404)
+//         .json({ message: "Unauthorized: Purchaser not found or inactive." });
+//     }
+
+//     // Find a Food doc for this trip (active) belonging to this purchaser
+//     const foodDoc = await Food.findOne({
+//       trip: tripId,
+//       purchaser: purchaserId,
+//       activeStatus: { $ne: false },
+//     })
+//       .populate("rows.vendor", "name")
+//       .lean();
+
+//     if (!foodDoc) {
+//       return res.status(200).json({
+//         tripId,
+//         date,
+//         categories: [],
+//         typesByCategory: {},
+//         options: {},
+//       });
+//     }
+
+//     const byCategoryType = {}; // { [category]: { [type]: [items] } }
+//     const categoriesSet = new Set();
+//     const typesByCategory = {}; // { [category]: [types...] }
+
+//     for (const row of foodDoc.rows || []) {
+//       const {
+//         vendor,
+//         mealType,
+//         mealCategory,
+//         foodName,
+//         description,
+//         prices = [],
+//       } = row;
+
+//       // Find a price that matches this date
+//       const match = prices.find((p) =>
+//         inRange(dayDate, p.validFrom, p.validTo)
+//       );
+//       if (!match) continue;
+
+//       const item = {
+//         foodName,
+//         description: description || "",
+//         price: Number(match.price || 0),
+//         percent: Number(match.percent || 0),
+//         itineraryPrice: Number(match.itineraryPrice || 0),
+//         vendor: vendor?._id || null,
+//         vendorName: vendor?.name || "",
+//       };
+
+//       categoriesSet.add(mealCategory || "Uncategorized");
+
+//       if (!byCategoryType[mealCategory]) byCategoryType[mealCategory] = {};
+//       if (!byCategoryType[mealCategory][mealType])
+//         byCategoryType[mealCategory][mealType] = [];
+//       byCategoryType[mealCategory][mealType].push(item);
+//     }
+
+//     // Build typesByCategory lists
+//     for (const cat of Object.keys(byCategoryType)) {
+//       typesByCategory[cat] = Object.keys(byCategoryType[cat]);
+//     }
+
+//     return res.status(200).json({
+//       tripId,
+//       date,
+//       categories: Array.from(categoriesSet),
+//       typesByCategory,
+//       options: byCategoryType, // category -> type -> [items]
+//     });
+//   } catch (err) {
+//     console.error("getTripFoodsForDate error:", err);
+//     return res
+//       .status(500)
+//       .json({ message: "Server error while fetching trip foods." });
+//   }
+// };
+
 export const getTripFoodsForDate = async (req, res) => {
   try {
     const purchaserId = req.userId;
@@ -2131,7 +2835,7 @@ export const getTripFoodsForDate = async (req, res) => {
       purchaser: purchaserId,
       activeStatus: { $ne: false },
     })
-      .populate("rows.vendor", "name")
+      .populate("rows.vendor", "name activeStatus") // ✅ include activeStatus
       .lean();
 
     if (!foodDoc) {
@@ -2158,6 +2862,11 @@ export const getTripFoodsForDate = async (req, res) => {
         prices = [],
       } = row;
 
+      const vendorDoc = vendor; // populated above
+
+      // ❌ skip if no vendor or vendor inactive
+      if (!vendorDoc || vendorDoc.activeStatus === false) continue;
+
       // Find a price that matches this date
       const match = prices.find((p) =>
         inRange(dayDate, p.validFrom, p.validTo)
@@ -2170,16 +2879,18 @@ export const getTripFoodsForDate = async (req, res) => {
         price: Number(match.price || 0),
         percent: Number(match.percent || 0),
         itineraryPrice: Number(match.itineraryPrice || 0),
-        vendor: vendor?._id || null,
-        vendorName: vendor?.name || "",
+        vendor: vendorDoc?._id || null, // ✅ only active vendor id
+        vendorName: vendorDoc?.name || "", // ✅ for UI
       };
 
-      categoriesSet.add(mealCategory || "Uncategorized");
+      const catKey = mealCategory || "Uncategorized";
 
-      if (!byCategoryType[mealCategory]) byCategoryType[mealCategory] = {};
-      if (!byCategoryType[mealCategory][mealType])
-        byCategoryType[mealCategory][mealType] = [];
-      byCategoryType[mealCategory][mealType].push(item);
+      categoriesSet.add(catKey);
+
+      if (!byCategoryType[catKey]) byCategoryType[catKey] = {};
+      if (!byCategoryType[catKey][mealType])
+        byCategoryType[catKey][mealType] = [];
+      byCategoryType[catKey][mealType].push(item);
     }
 
     // Build typesByCategory lists
@@ -2201,6 +2912,77 @@ export const getTripFoodsForDate = async (req, res) => {
       .json({ message: "Server error while fetching trip foods." });
   }
 };
+
+// export const getAddonTripVehiclesForDate = async (req, res) => {
+//   try {
+//     const purchaserId = req.userId;
+//     const { addonTripId } = req.params;
+//     const { date } = req.query;
+
+//     if (!date)
+//       return res
+//         .status(400)
+//         .json({ message: "date query (YYYY-MM-DD) is required" });
+//     const dayDate = new Date(date);
+//     if (isNaN(dayDate))
+//       return res.status(400).json({ message: "Invalid date" });
+
+//     const purchaser = await Purchaser.findById(purchaserId);
+//     if (!purchaser) {
+//       return res
+//         .status(404)
+//         .json({ message: "Unauthorized: Purchaser not found or inactive." });
+//     }
+
+//     const addon = await AddOnTrip.findOne({
+//       _id: addonTripId,
+//       purchaser: purchaserId,
+//     })
+//       .populate({
+//         path: "vehicles.vehicle",
+//         select: "vehicle percentage", // from Vehicle model
+//       })
+//       .lean();
+
+//     if (!addon)
+//       return res.status(404).json({ message: "Add-on trip not found" });
+
+//     const byCategory = {};
+//     for (const row of addon.vehicles || []) {
+//       if (!row || !row.vehicle) continue;
+
+//       // choose price for the given date
+//       const matched = (row.prices || []).find((p) =>
+//         inRange(dayDate, p.validFrom, p.validTo)
+//       );
+//       if (!matched) continue;
+
+//       const vehDoc = row.vehicle;
+//       const entry = {
+//         vehicleId: vehDoc?._id,
+//         vehicleName: vehDoc?.vehicle,
+//         percentage: Number(vehDoc?.percentage ?? 0),
+//         basePrice: Number(matched.price),
+//         vendor: row.vendor || null,
+//       };
+
+//       if (!byCategory[row.category]) byCategory[row.category] = [];
+//       byCategory[row.category].push(entry);
+//     }
+
+//     return res.status(200).json({
+//       addonTripId,
+//       date,
+//       categories: Object.keys(byCategory),
+//       options: byCategory,
+//     });
+//   } catch (err) {
+//     console.error("getAddonTripVehiclesForDate error:", err);
+//     return res
+//       .status(500)
+//       .json({ message: "Server error while fetching add-on vehicles." });
+//   }
+// };
 export const getAddonTripVehiclesForDate = async (req, res) => {
   try {
     const purchaserId = req.userId;
@@ -2228,7 +3010,11 @@ export const getAddonTripVehiclesForDate = async (req, res) => {
     })
       .populate({
         path: "vehicles.vehicle",
-        select: "vehicle percentage", // from Vehicle model
+        select: "vehicle percentage activeStatus", // ✅ include activeStatus
+      })
+      .populate({
+        path: "vehicles.vendor",
+        select: "activeStatus", // ✅ populate vendor & its activeStatus
       })
       .lean();
 
@@ -2237,7 +3023,16 @@ export const getAddonTripVehiclesForDate = async (req, res) => {
 
     const byCategory = {};
     for (const row of addon.vehicles || []) {
-      if (!row || !row.vehicle) continue;
+      if (!row) continue;
+
+      const vehDoc = row.vehicle; // populated above
+      const vendorDoc = row.vendor; // populated above
+
+      // ❌ skip if no vehicle or vehicle inactive
+      if (!vehDoc || vehDoc.activeStatus === false) continue;
+
+      // ❌ skip if no vendor or vendor inactive
+      if (!vendorDoc || vendorDoc.activeStatus === false) continue;
 
       // choose price for the given date
       const matched = (row.prices || []).find((p) =>
@@ -2245,13 +3040,12 @@ export const getAddonTripVehiclesForDate = async (req, res) => {
       );
       if (!matched) continue;
 
-      const vehDoc = row.vehicle;
       const entry = {
         vehicleId: vehDoc?._id,
         vehicleName: vehDoc?.vehicle,
         percentage: Number(vehDoc?.percentage ?? 0),
         basePrice: Number(matched.price),
-        vendor: row.vendor || null,
+        vendor: vendorDoc?._id || null, // ✅ only active vendor id
       };
 
       if (!byCategory[row.category]) byCategory[row.category] = [];
@@ -2271,6 +3065,7 @@ export const getAddonTripVehiclesForDate = async (req, res) => {
       .json({ message: "Server error while fetching add-on vehicles." });
   }
 };
+
 export const getActivitiesPricingForDate = async (req, res) => {
   try {
     const purchaserId = req.userId;
@@ -2285,11 +3080,9 @@ export const getActivitiesPricingForDate = async (req, res) => {
       return res.status(400).json({ message: "Invalid date" });
 
     if (!ids)
-      return res
-        .status(400)
-        .json({
-          message: "ids query is required (comma separated activity ids)",
-        });
+      return res.status(400).json({
+        message: "ids query is required (comma separated activity ids)",
+      });
     const idList = ids
       .split(",")
       .map((s) => s.trim())
@@ -2346,6 +3139,110 @@ export const getActivitiesPricingForDate = async (req, res) => {
       .json({ message: "Server error while fetching activities pricing." });
   }
 };
+// export const getAccommodationsPricingForDate = async (req, res) => {
+//   try {
+//     const purchaserId = req.userId;
+//     const { destinationId, date } = req.query;
+
+//     if (!destinationId)
+//       return res.status(400).json({ message: "destinationId is required" });
+//     if (!date)
+//       return res.status(400).json({ message: "date (YYYY-MM-DD) is required" });
+
+//     const dayDate = new Date(date);
+//     if (isNaN(dayDate))
+//       return res.status(400).json({ message: "Invalid date" });
+
+//     const purchaser = await Purchaser.findById(purchaserId).lean();
+//     if (!purchaser) {
+//       return res
+//         .status(404)
+//         .json({ message: "Unauthorized: Purchaser not found or inactive." });
+//     }
+
+//     // Pull candidate accommodations for that destination and purchaser
+//     const accs = await Accommodation.find({
+//       destination: destinationId,
+//       purchaserId: purchaserId, // matches your schema field name
+//     })
+//       .populate("vendor", "name")
+//       .lean();
+
+//     // Known "room type" numeric keys we care about
+//     const ROOM_KEYS = [
+//       "2BEDEP",
+//       "2BEDCP",
+//       "2BEDMAP",
+//       "3BEDEP",
+//       "3BEDCP",
+//       "3BEDMAP",
+//       "4BEDEP",
+//       "4BEDCP",
+//       "4BEDMAP",
+//       "EXTRABEDEP",
+//       "EXTRABEDCP",
+//       "EXTRABEDMAP",
+//       "FRESHUP",
+//       "EARLYCHECKIN",
+//       "LATECHECKOUT",
+//     ];
+
+//     const items = [];
+
+//     for (const a of accs) {
+//       const baseSection = (a.formSections || []).find((ps) =>
+//         inRange(dayDate, ps?.validFrom, ps?.validTo)
+//       );
+//       const commSection = (a.formSectionsWithCommission || []).find((ps) =>
+//         inRange(dayDate, ps?.validFrom, ps?.validTo)
+//       );
+//       if (!baseSection || !commSection) continue;
+
+//       const roomTypes = [];
+//       for (const key of ROOM_KEYS) {
+//         const boVal = Number(baseSection[key] ?? 0);
+//         const itinVal = Number(commSection[key] ?? 0);
+//         if (!Number.isFinite(boVal) || boVal <= 0) continue; // only non-zero/positive
+//         // push room type option
+//         roomTypes.push({
+//           code: key,
+//           label: key, // keep code as label (you can prettify if you like)
+//           bo: boVal,
+//           itinerary: Number.isFinite(itinVal)
+//             ? itinVal
+//             : Math.round(
+//                 boVal * (1 + Number(baseSection.commission || 0) / 100)
+//               ),
+//         });
+//       }
+//       if (!roomTypes.length) continue;
+
+//       items.push({
+//         accommodationId: String(a._id),
+//         propertyName: a.propertyName,
+//         hotelCategory: a.hotelCategory || "",
+//         roomCategory: a.roomCategory || "",
+//         vendorId: a.vendor?._id || null,
+//         vendorName: a.vendor?.name || "",
+//         commission: Number(
+//           a?.formSections?.length ? baseSection.commission || 0 : 0
+//         ),
+//         roomTypes,
+//       });
+//     }
+
+//     return res.status(200).json({
+//       destinationId,
+//       date,
+//       properties: items,
+//     });
+//   } catch (err) {
+//     console.error("getAccommodationsPricingForDate error:", err);
+//     return res
+//       .status(500)
+//       .json({ message: "Server error while fetching accommodations pricing." });
+//   }
+// };
 export const getAccommodationsPricingForDate = async (req, res) => {
   try {
     const purchaserId = req.userId;
@@ -2367,15 +3264,15 @@ export const getAccommodationsPricingForDate = async (req, res) => {
         .json({ message: "Unauthorized: Purchaser not found or inactive." });
     }
 
-    // Pull candidate accommodations for that destination and purchaser
+    // ✅ Pull only ACTIVE accommodations for that destination & purchaser
     const accs = await Accommodation.find({
       destination: destinationId,
-      purchaserId: purchaserId, // matches your schema field name
+      purchaserId: purchaserId,
+      status: "Active", // 👈 only active accommodations
     })
-      .populate("vendor", "name")
+      .populate("vendor", "name activeStatus") // 👈 also load vendor.activeStatus
       .lean();
 
-    // Known "room type" numeric keys we care about
     const ROOM_KEYS = [
       "2BEDEP",
       "2BEDCP",
@@ -2397,6 +3294,11 @@ export const getAccommodationsPricingForDate = async (req, res) => {
     const items = [];
 
     for (const a of accs) {
+      const vendorDoc = a.vendor;
+
+      // ✅ skip if no vendor OR vendor inactive
+      if (!vendorDoc || vendorDoc.activeStatus === false) continue;
+
       const baseSection = (a.formSections || []).find((ps) =>
         inRange(dayDate, ps?.validFrom, ps?.validTo)
       );
@@ -2409,11 +3311,11 @@ export const getAccommodationsPricingForDate = async (req, res) => {
       for (const key of ROOM_KEYS) {
         const boVal = Number(baseSection[key] ?? 0);
         const itinVal = Number(commSection[key] ?? 0);
-        if (!Number.isFinite(boVal) || boVal <= 0) continue; // only non-zero/positive
-        // push room type option
+        if (!Number.isFinite(boVal) || boVal <= 0) continue;
+
         roomTypes.push({
           code: key,
-          label: key, // keep code as label (you can prettify if you like)
+          label: key,
           bo: boVal,
           itinerary: Number.isFinite(itinVal)
             ? itinVal
@@ -2429,11 +3331,9 @@ export const getAccommodationsPricingForDate = async (req, res) => {
         propertyName: a.propertyName,
         hotelCategory: a.hotelCategory || "",
         roomCategory: a.roomCategory || "",
-        vendorId: a.vendor?._id || null,
-        vendorName: a.vendor?.name || "",
-        commission: Number(
-          a?.formSections?.length ? baseSection.commission || 0 : 0
-        ),
+        vendorId: vendorDoc?._id || null, // ✅ only active vendor id
+        vendorName: vendorDoc?.name || "",
+        commission: Number(baseSection.commission || 0),
         roomTypes,
       });
     }
@@ -2538,12 +3438,10 @@ export const createFixedTour = async (req, res) => {
     });
 
     await newTour.save();
-    return res
-      .status(201)
-      .json({
-        message: "Fixed Tour created successfully",
-        tourId: newTour._id,
-      });
+    return res.status(201).json({
+      message: "Fixed Tour created successfully",
+      tourId: newTour._id,
+    });
   } catch (err) {
     console.error("Fixed tour creation error:", err);
     return res.status(500).json({ message: "Failed to create fixed tour" });
@@ -2668,35 +3566,96 @@ export const updateFixedTour = async (req, res) => {
 
     if (!updatedTour)
       return res.status(404).json({ message: "Fixed tour not found" });
-    return res
-      .status(200)
-      .json({
-        message: "Fixed Tour updated successfully",
-        tourId: updatedTour._id,
-      });
+    return res.status(200).json({
+      message: "Fixed Tour updated successfully",
+      tourId: updatedTour._id,
+    });
   } catch (err) {
     console.error("Error updating fixed tour:", err);
     return res.status(500).json({ message: "Failed to update fixed tour" });
   }
 };
-export const getVendorsOfFoodsByLocation = async (req, res) => {
-  const purchaserId = req.userId;
-  const { countryId, stateId, destinationId } = req.params;
-  const purchaser = await Purchaser.findById(purchaserId);
-  if (!purchaser) {
-    return res
-      .status(404)
-      .json({ message: "Unauthorized: Purchaser not found or inactive." });
-  }
+// export const getVendorsOfFoodsByLocation = async (req, res) => {
+//   const purchaserId = req.userId;
+//   const { countryId, stateId, destinationId } = req.params;
+//   const purchaser = await Purchaser.findById(purchaserId);
+//   if (!purchaser) {
+//     return res
+//       .status(404)
+//       .json({ message: "Unauthorized: Purchaser not found or inactive." });
+//   }
 
+//   try {
+//     const vendors = await Vendor.find({
+//       purchaser: purchaserId,
+//       country: countryId,
+//       state: stateId,
+//       destination: destinationId,
+//       services: "Food",
+//     }).select("_id name");
+
+//     res.status(200).json(vendors);
+//   } catch (error) {
+//     console.error("Error fetching vendors:", error);
+//     res.status(500).json({ message: "Failed to fetch vendors" });
+//   }
+// };
+export const getVendorsOfFoodsByLocation = async (req, res) => {
   try {
-    const vendors = await Vendor.find({
+    const purchaserId = req.userId;
+    const { countryId, stateId, destinationId } = req.params;
+    let { currentVendorId } = req.query; // 👈 NEW
+
+    const purchaser = await Purchaser.findById(purchaserId).lean();
+    if (!purchaser) {
+      return res
+        .status(404)
+        .json({ message: "Unauthorized: Purchaser not found or inactive." });
+    }
+
+    // normalize query param junk
+    if (
+      currentVendorId === "undefined" ||
+      currentVendorId === "null" ||
+      currentVendorId === ""
+    ) {
+      currentVendorId = undefined;
+    }
+
+    const forcedVendorIds = currentVendorId
+      ? currentVendorId.split(",").filter(Boolean)
+      : [];
+
+    // 1) ACTIVE vendors for Food
+    let vendors = await Vendor.find({
       purchaser: purchaserId,
       country: countryId,
       state: stateId,
       destination: destinationId,
       services: "Food",
-    }).select("_id name");
+      activeStatus: true,
+    }).select("_id name activeStatus"); // 👈 include activeStatus
+
+    // 2) If editing, ensure current vendor(s) are included even if inactive
+    if (forcedVendorIds.length > 0) {
+      const existingIds = new Set(vendors.map((v) => v._id.toString()));
+
+      const extraVendors = await Vendor.find({
+        _id: { $in: forcedVendorIds },
+        purchaser: purchaserId,
+        country: countryId,
+        state: stateId,
+        destination: destinationId,
+        services: "Food",
+        // no activeStatus filter → can be inactive
+      }).select("_id name activeStatus");
+
+      for (const v of extraVendors) {
+        if (!existingIds.has(v._id.toString())) {
+          vendors.push(v);
+        }
+      }
+    }
 
     res.status(200).json(vendors);
   } catch (error) {

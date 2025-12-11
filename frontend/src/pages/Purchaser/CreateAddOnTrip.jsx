@@ -108,8 +108,16 @@ const CreateAddOnTrip = () => {
   // ---------- Helpers to map options ----------
   const countryOptions = countries.map((c) => ({ value: c._id, label: c.name }));
   const stateOptions = states.map((s) => ({ value: s._id, label: s.name }));
-  const destinationOptions = destinations.map((d) => ({ value: d._id, label: d.name }));
-  const tripOptions = trips.map((t) => ({ value: t._id, label: t.tripName }));
+  // const destinationOptions = destinations.map((d) => ({ value: d._id, label: d.name }));
+  const destinationOptions = destinations.map((d) => ({
+  value: d._id,
+  label: d.activeStatus === false ? `${d.name} (inactive)` : d.name,
+}));
+  // const tripOptions = trips.map((t) => ({ value: t._id, label: t.tripName }));
+const tripOptions = trips.map((t) => ({
+  value: t._id,
+  label: t.activeStatus === false ? `${t.tripName} (inactive)` : t.tripName,
+}));
 
   const fetchAddOnTrips = async () => {
     try {
@@ -170,55 +178,108 @@ const CreateAddOnTrip = () => {
     }
   }, [selectedState]);
 
-  useEffect(() => {
-    if (selectedCountry && selectedState && selectedDestination) {
-      const fetchVendors = async () => {
-        try {
-          const res = await API.get(
-            `/purchaser/vendorsOfVehicles/${selectedCountry}/${selectedState}/${selectedDestination}`
-          );
-          setVendors(res.data);
-        } catch (err) {
-          toast.error("Error fetching vendors:", err);
-        }
-      };
-      fetchVendors();
+  // useEffect(() => {
+  //   if (selectedCountry && selectedState && selectedDestination) {
+  //     const fetchVendors = async () => {
+  //       try {
+  //         const res = await API.get(
+  //           `/purchaser/vendorsOfVehicles/${selectedCountry}/${selectedState}/${selectedDestination}`
+  //         );
+  //         setVendors(res.data);
+  //       } catch (err) {
+  //         toast.error("Error fetching vendors:", err);
+  //       }
+  //     };
+  //     fetchVendors();
 
-      setSelectedVendor("");
-      setVehiclesCache({});
-      setRows([
-        {
-          vendor: "",
-          category: "",
-          vehicle: "",
-          prices: [{ validFrom: "", validTo: "", price: "" }],
-          expanded: true,
-        },
-      ]);
+  //     setSelectedVendor("");
+  //     setVehiclesCache({});
+  //     setRows([
+  //       {
+  //         vendor: "",
+  //         category: "",
+  //         vehicle: "",
+  //         prices: [{ validFrom: "", validTo: "", price: "" }],
+  //         expanded: true,
+  //       },
+  //     ]);
+  //   }
+  // }, [selectedDestination]);
+useEffect(() => {
+  if (!selectedCountry || !selectedState || !selectedDestination) return;
+
+  // ❗ in edit mode, vendors are handled inside handleEditTrip
+  if (editingTripId) return;
+
+  const fetchVendors = async () => {
+    try {
+      const res = await API.get(
+        `/purchaser/vendorsOfVehicles/${selectedCountry}/${selectedState}/${selectedDestination}`
+      );
+      setVendors(res.data);
+    } catch (err) {
+      toast.error("Error fetching vendors:", err);
     }
-  }, [selectedDestination]);
+  };
 
-  useEffect(() => {
-    if (selectedCountry && selectedState && selectedDestination) {
-      setTrips([]);
-      if (!editingTripId) {
-        setFormData((prev) => ({ ...prev, trip: "" }));
-      }
+  fetchVendors();
 
-      const fetchTrips = async () => {
-        try {
-          const res = await API.get(
-            `/purchaser/tripsByLocation/${selectedCountry}/${selectedState}/${selectedDestination}`
-          );
-          setTrips(res.data);
-        } catch (err) {
-          toast.error("Error fetching Trips:", err);
-        }
-      };
+  setSelectedVendor("");
+  setVehiclesCache({});
+  setRows([
+    {
+      vendor: "",
+      category: "",
+      vehicle: "",
+      prices: [{ validFrom: "", validTo: "", price: "" }],
+      expanded: true,
+    },
+  ]);
+}, [selectedDestination, selectedCountry, selectedState, editingTripId]);
 
-      fetchTrips();
+  // useEffect(() => {
+  //   if (selectedCountry && selectedState && selectedDestination) {
+  //     setTrips([]);
+  //     if (!editingTripId) {
+  //       setFormData((prev) => ({ ...prev, trip: "" }));
+  //     }
+
+  //     const fetchTrips = async () => {
+  //       try {
+  //         const res = await API.get(
+  //           `/purchaser/tripsByLocation/${selectedCountry}/${selectedState}/${selectedDestination}`
+  //         );
+  //         setTrips(res.data);
+  //       } catch (err) {
+  //         toast.error("Error fetching Trips:", err);
+  //       }
+  //     };
+
+  //     fetchTrips();
+  //   }
+  // }, [selectedCountry, selectedState, selectedDestination]);
+useEffect(() => {
+  if (!selectedCountry || !selectedState || !selectedDestination) return;
+
+  // ❗ in edit mode, trips are loaded inside handleEditTrip (with currentTripId)
+  if (editingTripId) return;
+
+  setTrips([]);
+  setFormData((prev) => ({ ...prev, trip: "" }));
+
+  const fetchTrips = async () => {
+    try {
+      const res = await API.get(
+        `/purchaser/tripsByLocation/${selectedCountry}/${selectedState}/${selectedDestination}`
+      );
+      setTrips(res.data);
+    } catch (err) {
+      toast.error("Error fetching Trips:", err);
     }
-  }, [selectedCountry, selectedState, selectedDestination]);
+  };
+
+  fetchTrips();
+}, [selectedCountry, selectedState, selectedDestination, editingTripId]);
 
   const addRow = () => {
     setRows([
@@ -263,99 +324,208 @@ const CreateAddOnTrip = () => {
     setRows(updatedRows);
   };
 
-  const handleEditTrip = async (trip) => {
-    setEditingTripId(trip._id);
+  // const handleEditTrip = async (trip) => {
+  //   setEditingTripId(trip._id);
 
-    setFormData({
-      addontripName: trip.addontripName,
-      country: trip.country._id,
-      state: trip.state._id,
-      destination: trip.destination._id,
-      trip: trip.trip._id,
-      description: trip.description,
-      approxKm: trip.approxKm,
-    });
-    setImageUrl(trip.imageUrl || "");
+  //   setFormData({
+  //     addontripName: trip.addontripName,
+  //     country: trip.country._id,
+  //     state: trip.state._id,
+  //     destination: trip.destination._id,
+  //     trip: trip.trip._id,
+  //     description: trip.description,
+  //     approxKm: trip.approxKm,
+  //   });
+  //   setImageUrl(trip.imageUrl || "");
 
-    setSelectedCountry(trip.country._id);
+  //   setSelectedCountry(trip.country._id);
 
-    // 1. Fetch states
-    try {
-      const statesRes = await API.get(`/purchaser/states/${trip.country._id}`);
-      setStates(statesRes.data);
-    } catch {
-      toast.error("Error fetching states");
-      return;
-    }
+  //   // 1. Fetch states
+  //   try {
+  //     const statesRes = await API.get(`/purchaser/states/${trip.country._id}`);
+  //     setStates(statesRes.data);
+  //   } catch {
+  //     toast.error("Error fetching states");
+  //     return;
+  //   }
 
-    setSelectedState(trip.state._id);
+  //   setSelectedState(trip.state._id);
 
-    // 2. Fetch destinations
-    try {
-      const destRes = await API.get(
-        `/purchaser/destinationsByCountryAndState/${trip.country._id}/${trip.state._id}`
-      );
-      setDestinations(destRes.data);
-    } catch {
-      toast.error("Error fetching destinations");
-      return;
-    }
+  //   // 2. Fetch destinations
+  //   try {
+  //     const destRes = await API.get(
+  //       `/purchaser/destinationsByCountryAndState/${trip.country._id}/${trip.state._id}`
+  //     );
+  //     setDestinations(destRes.data);
+  //   } catch {
+  //     toast.error("Error fetching destinations");
+  //     return;
+  //   }
 
-    setSelectedDestination(trip.destination._id);
+  //   setSelectedDestination(trip.destination._id);
 
-    // 3. Fetch vendors
-    try {
-      const vendorsRes = await API.get(
-        `/purchaser/vendorsOfVehicles/${trip.country._id}/${trip.state._id}/${trip.destination._id}`
-      );
-      setVendors(vendorsRes.data);
-    } catch {
-      toast.error("Error fetching vendors");
-      return;
-    }
+  //   // 3. Fetch vendors
+  //   try {
+  //     const vendorsRes = await API.get(
+  //       `/purchaser/vendorsOfVehicles/${trip.country._id}/${trip.state._id}/${trip.destination._id}`
+  //     );
+  //     setVendors(vendorsRes.data);
+  //   } catch {
+  //     toast.error("Error fetching vendors");
+  //     return;
+  //   }
 
-    try {
-      const tripsRes = await API.get(
-        `/purchaser/tripsByLocation/${trip.country._id}/${trip.state._id}/${trip.destination._id}`
-      );
-      setTrips(tripsRes.data);
-    } catch {
-      toast.error("Error fetching trips");
-      return;
-    }
+  //   try {
+  //     const tripsRes = await API.get(
+  //       `/purchaser/tripsByLocation/${trip.country._id}/${trip.state._id}/${trip.destination._id}`
+  //     );
+  //     setTrips(tripsRes.data);
+  //   } catch {
+  //     toast.error("Error fetching trips");
+  //     return;
+  //   }
 
-    // 4. Cache vehicles for each vendor
-    const newVehiclesCache = {};
-    for (const vehicleGroup of trip.vehicles) {
-      const vendorId = vehicleGroup.vendor._id;
-      if (!newVehiclesCache[vendorId]) {
-        try {
-          const res = await API.get(
-            `/purchaser/vehiclesForTrip/${trip.country._id}/${trip.state._id}/${trip.destination._id}/${vendorId}`
-          );
-          newVehiclesCache[vendorId] = res.data;
-        } catch {
-          toast.error("Error loading vehicles for vendor");
-        }
-      }
-    }
-    setVehiclesCache(newVehiclesCache);
+  //   // 4. Cache vehicles for each vendor
+  //   const newVehiclesCache = {};
+  //   for (const vehicleGroup of trip.vehicles) {
+  //     const vendorId = vehicleGroup.vendor._id;
+  //     if (!newVehiclesCache[vendorId]) {
+  //       try {
+  //         const res = await API.get(
+  //           `/purchaser/vehiclesForTrip/${trip.country._id}/${trip.state._id}/${trip.destination._id}/${vendorId}`
+  //         );
+  //         newVehiclesCache[vendorId] = res.data;
+  //       } catch {
+  //         toast.error("Error loading vehicles for vendor");
+  //       }
+  //     }
+  //   }
+  //   setVehiclesCache(newVehiclesCache);
 
-    // 5. Set rows
-    setRows(
-      trip.vehicles.map((v) => ({
-        vendor: v.vendor._id,
-        category: v.category,
-        vehicle: v.vehicle._id,
-        prices: v.prices.map((p) => ({
-          validFrom: p.validFrom?.slice(0, 10),
-          validTo: p.validTo?.slice(0, 10),
-          price: p.price,
-        })),
-        expanded: true,
-      }))
+  //   // 5. Set rows
+  //   setRows(
+  //     trip.vehicles.map((v) => ({
+  //       vendor: v.vendor._id,
+  //       category: v.category,
+  //       vehicle: v.vehicle._id,
+  //       prices: v.prices.map((p) => ({
+  //         validFrom: p.validFrom?.slice(0, 10),
+  //         validTo: p.validTo?.slice(0, 10),
+  //         price: p.price,
+  //       })),
+  //       expanded: true,
+  //     }))
+  //   );
+  // };
+const handleEditTrip = async (addon) => {
+  setEditingTripId(addon._id);
+
+  // basic form fields
+  setFormData({
+    addontripName: addon.addontripName,
+    country: addon.country._id,
+    state: addon.state._id,
+    destination: addon.destination._id,
+    trip: addon.trip._id,
+    description: addon.description,
+    approxKm: addon.approxKm,
+  });
+
+  setImageUrl(addon.imageUrl || "");
+  setSelectedCountry(addon.country._id);
+
+  // 1) States
+  try {
+    const statesRes = await API.get(`/purchaser/states/${addon.country._id}`);
+    setStates(statesRes.data);
+  } catch {
+    toast.error("Error fetching states");
+    return;
+  }
+  setSelectedState(addon.state._id);
+
+  // 2) Destinations (include current even if inactive)
+  try {
+    const destRes = await API.get(
+      `/purchaser/destinationsByCountryAndState/${addon.country._id}/${addon.state._id}?currentDestinationId=${addon.destination._id}`
     );
-  };
+    setDestinations(destRes.data);
+  } catch {
+    toast.error("Error fetching destinations");
+    return;
+  }
+  setSelectedDestination(addon.destination._id);
+
+  // 3) Trips (include current trip even if inactive)
+  try {
+    const tripsRes = await API.get(
+      `/purchaser/tripsByLocation/${addon.country._id}/${addon.state._id}/${addon.destination._id}?currentTripId=${addon.trip._id}`
+    );
+    setTrips(tripsRes.data);
+  } catch {
+    toast.error("Error fetching trips");
+    return;
+  }
+
+  // 4) Vendors (include all vendors used in this addon trip, even if inactive)
+  const vendorIdSet = new Set(
+    (addon.vehicles || []).map((v) => v.vendor?._id).filter(Boolean)
+  );
+  const vendorIdCsv = Array.from(vendorIdSet).join(",");
+
+  try {
+    const vendorsRes = await API.get(
+      `/purchaser/vendorsOfVehicles/${addon.country._id}/${addon.state._id}/${addon.destination._id}?currentVendorId=${encodeURIComponent(
+        vendorIdCsv
+      )}`
+    );
+    setVendors(vendorsRes.data);
+  } catch {
+    toast.error("Error fetching vendors");
+    return;
+  }
+
+  // 5) Vehicles (per vendor – include any inactive ones used in this addon trip)
+  const vendorToVehicleIds = {};
+  (addon.vehicles || []).forEach((vg) => {
+    const vId = vg.vendor?._id;
+    const vehId = vg.vehicle?._id;
+    if (!vId || !vehId) return;
+    if (!vendorToVehicleIds[vId]) vendorToVehicleIds[vId] = new Set();
+    vendorToVehicleIds[vId].add(vehId);
+  });
+
+  const newVehiclesCache = {};
+  for (const [vendorId, idSet] of Object.entries(vendorToVehicleIds)) {
+    const csv = Array.from(idSet).join(",");
+    try {
+      const res = await API.get(
+        `/purchaser/vehiclesForTrip/${addon.country._id}/${addon.state._id}/${addon.destination._id}/${vendorId}?currentVehicleIds=${encodeURIComponent(
+          csv
+        )}`
+      );
+      newVehiclesCache[vendorId] = res.data;
+    } catch {
+      toast.error("Error loading vehicles for vendor");
+    }
+  }
+  setVehiclesCache(newVehiclesCache);
+
+  // 6) Rows prefill
+  setRows(
+    (addon.vehicles || []).map((v) => ({
+      vendor: v.vendor?._id || "",
+      category: v.category || "",
+      vehicle: v.vehicle?._id || "",
+      prices: (v.prices || []).map((p) => ({
+        validFrom: p.validFrom?.slice(0, 10) || "",
+        validTo: p.validTo?.slice(0, 10) || "",
+        price: p.price ?? "",
+      })),
+      expanded: true,
+    }))
+  );
+};
 
   const validateVehiclePriceRanges = (rows) => {
     const vehicleDateMap = new Map();
@@ -556,20 +726,29 @@ const CreateAddOnTrip = () => {
   };
 
   // Options for row-level selects
-  const vendorOptions = vendors.map((v) => ({ value: v._id, label: v.name }));
+  // const vendorOptions = vendors.map((v) => ({ value: v._id, label: v.name }));
+//    const vendorOptions = vendors.map((v) => ({
+//   value: v._id,
+//   label: v.activeStatus === false ? `${v.name} (inactive)` : v.name,
+// }));
 
-  const categoryOptionsForVendor = (vendorId) => {
-    const categories = [
-      ...new Set((vehiclesCache[vendorId] || []).map((v) => v.category)),
-    ];
-    return categories.map((c) => ({ value: c, label: c }));
-  };
+//   const categoryOptionsForVendor = (vendorId) => {
+//     const categories = [
+//       ...new Set((vehiclesCache[vendorId] || []).map((v) => v.category)),
+//     ];
+//     return categories.map((c) => ({ value: c, label: c }));
+//   };
 
-  const vehicleOptionsForRow = (vendorId, category) =>
-    (vehiclesCache[vendorId] || [])
-      .filter((v) => v.category === category)
-      .map((v) => ({ value: v._id, label: v.vehicle }));
-
+//   // const vehicleOptionsForRow = (vendorId, category) =>
+//   //   (vehiclesCache[vendorId] || [])
+//   //     .filter((v) => v.category === category)
+//   //     .map((v) => ({ value: v._id, label: v.vehicle }));
+// const vehicleOptions = (vehiclesCache[row.vendor] || [])
+//   .filter((v) => v.category === row.category)
+//   .map((v) => ({
+//     value: v._id,
+//     label: v.activeStatus === false ? `${v.vehicle} (inactive)` : v.vehicle,
+//   }));
   return (
     <div className="w-full max-w-[100rem] mx-auto bg-white rounded-2xl shadow-2xl p-6 md:p-10 space-y-10 text-sm font-medium">
       {/* Clear prefill button */}
@@ -773,15 +952,25 @@ const CreateAddOnTrip = () => {
 
       {/* Vehicle Rows */}
       {rows.map((row, rowIndex) => {
-        const vendorOptions = vendors.map((v) => ({ value: v._id, label: v.name }));
+        {/* const vendorOptions = vendors.map((v) => ({ value: v._id, label: v.name })); */}
+        const vendorOptions = vendors.map((v) => ({
+  value: v._id,
+  label: v.activeStatus === false ? `${v.name} (inactive)` : v.name,
+}));
         const vendorValue = vendorOptions.find((o) => o.value === row.vendor) || null;
         const categoryOptions = [
           ...new Set((vehiclesCache[row.vendor] || []).map((v) => v.category)),
         ].map((c) => ({ value: c, label: c }));
         const categoryValue = categoryOptions.find((o) => o.value === row.category) || null;
-        const vehicleOptions = (vehiclesCache[row.vendor] || [])
+        {/* const vehicleOptions = (vehiclesCache[row.vendor] || [])
           .filter((v) => v.category === row.category)
-          .map((v) => ({ value: v._id, label: v.vehicle }));
+          .map((v) => ({ value: v._id, label: v.vehicle })); */}
+          const vehicleOptions = (vehiclesCache[row.vendor] || [])
+  .filter((v) => v.category === row.category)
+  .map((v) => ({
+    value: v._id,
+    label: v.activeStatus === false ? `${v.vehicle} (inactive)` : v.vehicle,
+  }));
         const vehicleValue = vehicleOptions.find((o) => o.value === row.vehicle) || null;
 
         return (

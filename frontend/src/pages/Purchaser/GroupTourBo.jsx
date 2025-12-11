@@ -847,6 +847,8 @@ useEffect(() => {
         foodLines,
         actLines,
         accLines,
+        totalBO: grand.bo,
+        totalItinerary: grand.itin,
       });
       toast.success("Booking order saved");
 
@@ -951,7 +953,7 @@ useEffect(() => {
             className="px-4 py-2 rounded-lg bg-[#8570EE] text-white hover:opacity-90 disabled:opacity-60 inline-flex items-center gap-2"
           >
             {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-            {saving ? "Saving..." : "Save Booking Order"}
+            {saving ? "Saving..." : "Activate Tour"}
           </button>
         </div>
       </div>

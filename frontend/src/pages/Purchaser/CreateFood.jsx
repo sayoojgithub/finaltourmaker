@@ -90,9 +90,21 @@ const CreateFood = () => {
   // -------- options helpers --------
   const countryOptions = countries.map((c) => ({ value: c._id, label: c.name }));
   const stateOptions = states.map((s) => ({ value: s._id, label: s.name }));
-  const destinationOptions = destinations.map((d) => ({ value: d._id, label: d.name }));
-  const tripOptions = trips.map((t) => ({ value: t._id, label: t.tripName }));
-  const vendorOptions = vendors.map((v) => ({ value: v._id, label: v.name }));
+  // const destinationOptions = destinations.map((d) => ({ value: d._id, label: d.name }));
+  const destinationOptions = destinations.map((d) => ({
+  value: d._id,
+  label: d.activeStatus === false ? `${d.name} (inactive)` : d.name,
+}));
+  // const tripOptions = trips.map((t) => ({ value: t._id, label: t.tripName }));
+  const tripOptions = trips.map((t) => ({
+  value: t._id,
+  label: t.activeStatus === false ? `${t.tripName} (inactive)` : t.tripName,
+}));
+  // const vendorOptions = vendors.map((v) => ({ value: v._id, label: v.name }));
+  const vendorOptions = vendors.map((v) => ({
+  value: v._id,
+  label: v.activeStatus === false ? `${v.name} (inactive)` : v.name,
+}));
   const mealTypeOptions = [
     { value: "Breakfast", label: "Breakfast" },
     { value: "Lunch", label: "Lunch" },
@@ -146,42 +158,119 @@ const CreateFood = () => {
     run();
   }, [formData.country]);
 
-  useEffect(() => {
-    const run = async () => {
-      if (!formData.country || !formData.state) { setDestinations([]); return; }
-      try {
-        const res = await API.get(
-          `/purchaser/destinationsByCountryAndState/${formData.country}/${formData.state}`
-        );
-        setDestinations(res.data);
-      } catch (err) {
-        toast.error(`Error fetching destinations: ${err.message}`);
-      }
-    };
-    run();
-  }, [formData.country, formData.state]);
-
-  const fetchData = async (countryId, stateId, destinationId) => {
-    try {
-      if (countryId && stateId && destinationId) {
-        const [vendorsRes, tripsRes] = await Promise.all([
-          API.get(`/purchaser/vendorsOfFoods/${countryId}/${stateId}/${destinationId}`),
-          API.get(`/purchaser/tripsByLocation/${countryId}/${stateId}/${destinationId}`),
-        ]);
-        setVendors(vendorsRes.data);
-        setTrips(tripsRes.data);
-      } else {
-        setVendors([]);
-        setTrips([]);
-      }
-    } catch (err) {
-      toast.error(`Error fetching vendors/trips: ${err.message}`);
+  // useEffect(() => {
+  //   const run = async () => {
+  //     if (!formData.country || !formData.state) { setDestinations([]); return; }
+  //     try {
+  //       const res = await API.get(
+  //         `/purchaser/destinationsByCountryAndState/${formData.country}/${formData.state}`
+  //       );
+  //       setDestinations(res.data);
+  //     } catch (err) {
+  //       toast.error(`Error fetching destinations: ${err.message}`);
+  //     }
+  //   };
+  //   run();
+  // }, [formData.country, formData.state]);
+  const fetchDestinations = async (countryId, stateId, currentDestinationId) => {
+  try {
+    if (!countryId || !stateId) {
+      setDestinations([]);
+      return;
     }
-  };
 
-  useEffect(() => {
-    fetchData(formData.country, formData.state, formData.destination);
-  }, [formData.country, formData.state, formData.destination]);
+    let url = `/purchaser/destinationsByCountryAndState/${countryId}/${stateId}`;
+
+    // when editing, pass the current destination id
+    if (currentDestinationId) {
+      url += `?currentDestinationId=${encodeURIComponent(currentDestinationId)}`;
+    }
+
+    const res = await API.get(url);
+    setDestinations(res.data);
+  } catch (err) {
+    toast.error(`Error fetching destinations: ${err.message}`);
+  }
+};
+useEffect(() => {
+  if (!formData.country || !formData.state) {
+    setDestinations([]);
+    return;
+  }
+
+  // ❗ in edit mode, destinations are handled inside handleEdit
+  if (editingTripFoodId) return;
+
+  fetchDestinations(formData.country, formData.state);
+}, [formData.country, formData.state, editingTripFoodId]);
+  // const fetchData = async (countryId, stateId, destinationId) => {
+  //   try {
+  //     if (countryId && stateId && destinationId) {
+  //       const [vendorsRes, tripsRes] = await Promise.all([
+  //         API.get(`/purchaser/vendorsOfFoods/${countryId}/${stateId}/${destinationId}`),
+  //         API.get(`/purchaser/tripsByLocation/${countryId}/${stateId}/${destinationId}`),
+  //       ]);
+  //       setVendors(vendorsRes.data);
+  //       setTrips(tripsRes.data);
+  //     } else {
+  //       setVendors([]);
+  //       setTrips([]);
+  //     }
+  //   } catch (err) {
+  //     toast.error(`Error fetching vendors/trips: ${err.message}`);
+  //   }
+  // };
+
+  // useEffect(() => {
+  //   fetchData(formData.country, formData.state, formData.destination);
+  // }, [formData.country, formData.state, formData.destination]);
+const fetchData = async (
+  countryId,
+  stateId,
+  destinationId,
+  currentVendorId,
+  currentTripId
+) => {
+  try {
+    if (!countryId || !stateId || !destinationId) {
+      setVendors([]);
+      setTrips([]);
+      return;
+    }
+
+    let vendorsUrl = `/purchaser/vendorsOfFoods/${countryId}/${stateId}/${destinationId}`;
+    if (currentVendorId) {
+      vendorsUrl += `?currentVendorId=${encodeURIComponent(currentVendorId)}`;
+    }
+
+    let tripsUrl = `/purchaser/tripsByLocation/${countryId}/${stateId}/${destinationId}`;
+    if (currentTripId) {
+      tripsUrl += `?currentTripId=${encodeURIComponent(currentTripId)}`;
+    }
+
+    const [vendorsRes, tripsRes] = await Promise.all([
+      API.get(vendorsUrl),
+      API.get(tripsUrl),
+    ]);
+
+    setVendors(vendorsRes.data);
+    setTrips(tripsRes.data);
+  } catch (err) {
+    toast.error(`Error fetching vendors/trips: ${err.message}`);
+  }
+};
+useEffect(() => {
+  if (!formData.country || !formData.state || !formData.destination) {
+    setVendors([]);
+    setTrips([]);
+    return;
+  }
+
+  // ❗ in edit mode, vendors+trips are handled inside handleEdit
+  if (editingTripFoodId) return;
+
+  fetchData(formData.country, formData.state, formData.destination);
+}, [formData.country, formData.state, formData.destination, editingTripFoodId]);
 
   // -------- row handlers --------
   const handleChange = (rowIndex, field, value) => {
@@ -300,54 +389,114 @@ const CreateFood = () => {
   };
 
   // -------- editing / submit --------
-  const handleEdit = async (foodId) => {
-    try {
-      const res = await API.get(`/purchaser/food/${foodId}`);
-      const food = res.data;
+  // const handleEdit = async (foodId) => {
+  //   try {
+  //     const res = await API.get(`/purchaser/food/${foodId}`);
+  //     const food = res.data;
 
-      setEditingTripFoodId(foodId);
+  //     setEditingTripFoodId(foodId);
 
-      setFormData({
-        country: food.country._id,
-        state: food.state._id,
-        destination: food.destination._id,
-        trip: food.trip._id,
-      });
+  //     setFormData({
+  //       country: food.country._id,
+  //       state: food.state._id,
+  //       destination: food.destination._id,
+  //       trip: food.trip._id,
+  //     });
 
-      const [stateRes, destRes] = await Promise.all([
-        API.get(`/purchaser/states/${food.country._id}`),
-        API.get(`/purchaser/destinationsByCountryAndState/${food.country._id}/${food.state._id}`),
-      ]);
-      setStates(stateRes.data);
-      setDestinations(destRes.data);
+  //     const [stateRes, destRes] = await Promise.all([
+  //       API.get(`/purchaser/states/${food.country._id}`),
+  //       API.get(`/purchaser/destinationsByCountryAndState/${food.country._id}/${food.state._id}`),
+  //     ]);
+  //     setStates(stateRes.data);
+  //     setDestinations(destRes.data);
 
-      const [vendorsRes, tripsRes] = await Promise.all([
-        API.get(`/purchaser/vendorsOfFoods/${food.country._id}/${food.state._id}/${food.destination._id}`),
-        API.get(`/purchaser/tripsByLocation/${food.country._id}/${food.state._id}/${food.destination._id}`),
-      ]);
-      setVendors(vendorsRes.data);
-      setTrips(tripsRes.data);
+  //     const [vendorsRes, tripsRes] = await Promise.all([
+  //       API.get(`/purchaser/vendorsOfFoods/${food.country._id}/${food.state._id}/${food.destination._id}`),
+  //       API.get(`/purchaser/tripsByLocation/${food.country._id}/${food.state._id}/${food.destination._id}`),
+  //     ]);
+  //     setVendors(vendorsRes.data);
+  //     setTrips(tripsRes.data);
 
-      const formattedRows = food.rows.map((row) => ({
-        vendor: row.vendor?._id || "",
-        mealType: row.mealType || "",
-        mealCategory: row.mealCategory || "",
-        foodName: row.foodName || "",
-        description: row.description || "",
-        prices: row.prices.map((p) => ({
-          validFrom: p.validFrom ? p.validFrom.slice(0, 10) : "",
-          validTo: p.validTo ? p.validTo.slice(0, 10) : "",
-          price: p.price || "",
-          percent: p.percent || "",
-          itineraryPrice: p.itineraryPrice || "",
-        })),
-        expanded: true,
-      }));
-      setRows(formattedRows);
-    } catch (err) {
-      toast.error("Failed to load food for editing.");
-    }
-  };
+  //     const formattedRows = food.rows.map((row) => ({
+  //       vendor: row.vendor?._id || "",
+  //       mealType: row.mealType || "",
+  //       mealCategory: row.mealCategory || "",
+  //       foodName: row.foodName || "",
+  //       description: row.description || "",
+  //       prices: row.prices.map((p) => ({
+  //         validFrom: p.validFrom ? p.validFrom.slice(0, 10) : "",
+  //         validTo: p.validTo ? p.validTo.slice(0, 10) : "",
+  //         price: p.price || "",
+  //         percent: p.percent || "",
+  //         itineraryPrice: p.itineraryPrice || "",
+  //       })),
+  //       expanded: true,
+  //     }));
+  //     setRows(formattedRows);
+  //   } catch (err) {
+  //     toast.error("Failed to load food for editing.");
+  //   }
+  // };
+const handleEdit = async (foodId) => {
+  try {
+    const res = await API.get(`/purchaser/food/${foodId}`);
+    const food = res.data;
+
+    setEditingTripFoodId(foodId);
+
+    const countryId = food.country?._id;
+    const stateId = food.state?._id;
+    const destinationId = food.destination?._id;
+    const tripId = food.trip?._id;
+
+    // set form fields
+    setFormData({
+      country: countryId || "",
+      state: stateId || "",
+      destination: destinationId || "",
+      trip: tripId || "",
+    });
+
+    // States will be loaded by the country->states effect as usual
+
+    // collect ALL vendors used in this food (could be multiple rows, some inactive)
+    const uniqueVendorIds = Array.from(
+      new Set(
+        (food.rows || [])
+          .map((row) => row.vendor?._id)
+          .filter(Boolean)
+      )
+    );
+    const vendorIdCsv = uniqueVendorIds.join(",");
+
+    // 1️⃣ destinations: include current even if inactive
+    await fetchDestinations(countryId, stateId, destinationId);
+
+    // 2️⃣ vendors + trips: include current vendor(s) and trip even if inactive
+    await fetchData(countryId, stateId, destinationId, vendorIdCsv, tripId);
+
+    // 3️⃣ rows
+    const formattedRows = (food.rows || []).map((row) => ({
+      vendor: row.vendor?._id || "",
+      mealType: row.mealType || "",
+      mealCategory: row.mealCategory || "",
+      foodName: row.foodName || "",
+      description: row.description || "",
+      prices: (row.prices || []).map((p) => ({
+        validFrom: p.validFrom ? p.validFrom.slice(0, 10) : "",
+        validTo: p.validTo ? p.validTo.slice(0, 10) : "",
+        price: p.price || "",
+        percent: p.percent || "",
+        itineraryPrice: p.itineraryPrice || "",
+      })),
+      expanded: true,
+    }));
+
+    setRows(formattedRows);
+  } catch (err) {
+    toast.error("Failed to load food for editing.");
+  }
+};
 
   const handleCreateFood = async () => {
     try {

@@ -120,6 +120,10 @@ const CreateGroupTour = ({ onOpenBO }) => {
 
   // ---------- days with multiple segments ----------
   const [days, setDays] = useState([]);
+    // ---------- view-only modal for ACTIVE tours ----------
+  const [viewTour, setViewTour] = useState(null);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [viewLoading, setViewLoading] = useState(false);
 
   // ---------- fetch list + search ----------
   const fetchGroupTours = async () => {
@@ -136,6 +140,34 @@ const CreateGroupTour = ({ onOpenBO }) => {
   useEffect(() => {
     fetchGroupTours();
   }, [search, page]);
+    // fetch full tour details for view-only modal
+  const openViewModal = async (tourId) => {
+    try {
+      setViewLoading(true);
+      setViewModalOpen(true);
+      setViewTour(null);
+      const res = await API.get(`/purchaser/groupTours/${tourId}`);
+      setViewTour(res.data?.tour || null);
+    } catch (err) {
+      console.error("Failed to load group tour details", err);
+      toast.error("Failed to load group tour details.");
+      setViewModalOpen(false);
+    } finally {
+      setViewLoading(false);
+    }
+  };
+
+  // when clicking BO icon in table
+  const handleBoClick = (tour) => {
+    // if tour is already ACTIVE -> show read-only modal
+    if (tour.activeStatus) {
+      openViewModal(tour._id);
+    } else {
+      // otherwise, go to BO component to create/edit BO
+      if (onOpenBO) onOpenBO(tour._id);
+    }
+  };
+
 
   // ---------- countries (once) ----------
   useEffect(() => {
@@ -538,7 +570,7 @@ const CreateGroupTour = ({ onOpenBO }) => {
         totalDays: "Total Days is required",
         totalNights: "Total Nights is required",
         startDate: "Start Date is required",
-        pricePerPax: "Price per Pax is required",
+        // pricePerPax: "Price per Pax is required",
         totalPax: "Total Pax is required",
       };
 
@@ -548,6 +580,11 @@ const CreateGroupTour = ({ onOpenBO }) => {
           return;
         }
       }
+        const pax = Number(formData.totalPax);
+    if (!Number.isFinite(pax) || pax <= 0) {
+      toast.error("Total Pax must be greater than 0");
+      return;
+    }
       if (!includes.length) return toast.error("At least one Include is required.");
       if (!excludes.length) return toast.error("At least one Exclude is required.");
       if (!days.length) return toast.error("At least one day is required.");
@@ -842,6 +879,7 @@ const CreateGroupTour = ({ onOpenBO }) => {
             Price Per Pax
           </label>
           <input
+            readOnly
             className="border border-gray-300 p-3 rounded-xl shadow-md w-full"
             placeholder="Price per Pax"
             value={formData.pricePerPax}
@@ -868,6 +906,7 @@ const CreateGroupTour = ({ onOpenBO }) => {
             Risk Amount
           </label>
           <input
+            readOnly
             className="border border-gray-300 p-3 rounded-xl shadow-md w-full"
             placeholder="Risk Amount"
             value={formData.riskAmount}
@@ -1251,13 +1290,21 @@ const CreateGroupTour = ({ onOpenBO }) => {
                       </button>
                     </td>
                     <td className="px-6 py-4 text-center font-semibold">
-                      <button
+                      {/* <button
                         title="Booking Order"
                         className="text-purple-600 hover:text-purple-800"
                         onClick={() => onOpenBO && onOpenBO(tour._id)}
                       >
                         <ReceiptText className="w-4 h-4" />
-                      </button>
+                      </button> */}
+                      <button
+  title={tour.activeStatus ? "View Group Tour Details" : "Booking Order"}
+  className="text-purple-600 hover:text-purple-800"
+  onClick={() => handleBoClick(tour)}
+>
+  <ReceiptText className="w-4 h-4" />
+</button>
+
                     </td>
                   </tr>
                 ))
@@ -1289,6 +1336,697 @@ const CreateGroupTour = ({ onOpenBO }) => {
           </button>
         </div>
       </div>
+            {/* VIEW-ONLY MODAL FOR ACTIVE GROUP TOUR */}
+      {viewModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white max-w-6xl w-[95%] max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+            {/* Modal header */}
+            <div className="flex items-start justify-between px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-[#321F6A] to-[#8570EE] text-white">
+              <div>
+                <div className="text-xs uppercase tracking-wide opacity-80">
+                  Group Tour Overview
+                </div>
+                <div className="text-2xl font-semibold">
+                  {viewTour?.tourName || "Group Tour"}
+                </div>
+                <div className="text-xs mt-1 space-x-3 opacity-90">
+                  <span>
+                    Article:{" "}
+                    <span className="font-semibold">
+                      {viewTour?.articleNumber || "-"}
+                    </span>
+                  </span>
+                  <span>•</span>
+                  <span>
+                    Category:{" "}
+                    <span className="font-semibold">
+                      {viewTour?.category || "-"}
+                    </span>
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                {viewTour?.activeStatus && (
+                  <span className="inline-flex items-center px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold shadow-sm">
+                    ACTIVE
+                  </span>
+                )}
+                <button
+                  onClick={() => {
+                    setViewModalOpen(false);
+                    setViewTour(null);
+                  }}
+                  className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white text-xl font-bold"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            {/* Modal body */}
+            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6 bg-gray-50">
+              {viewLoading || !viewTour ? (
+                <div className="w-full flex items-center justify-center py-10 text-gray-500">
+                  Loading tour details…
+                </div>
+              ) : (
+                <>
+                  {/* Helper to get names or ids */}
+                  {(() => {
+                    const t = viewTour;
+                    const topCountry =
+                      typeof t.country === "object" ? t.country?.name : t.country;
+                    const topState =
+                      typeof t.state === "object" ? t.state?.name : t.state;
+                    const topDest =
+                      typeof t.destination === "object"
+                        ? t.destination?.name
+                        : t.destination;
+
+                    return (
+                      <>
+                        {/* TOP SUMMARY */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="p-4 rounded-2xl bg-white border border-gray-200 shadow-sm">
+                            <div className="text-[11px] uppercase tracking-wide text-gray-500">
+                              Location
+                            </div>
+                            <div className="mt-1 text-sm text-gray-700 space-y-0.5">
+                              <div>
+                                <span className="font-semibold">Country: </span>
+                                {topCountry || "-"}
+                              </div>
+                              <div>
+                                <span className="font-semibold">State: </span>
+                                {topState || "-"}
+                              </div>
+                              <div>
+                                <span className="font-semibold">Destination: </span>
+                                {topDest || "-"}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="p-4 rounded-2xl bg-white border border-gray-200 shadow-sm">
+                            <div className="text-[11px] uppercase tracking-wide text-gray-500">
+                              Duration & Pax
+                            </div>
+                            <div className="mt-1 text-sm text-gray-700 space-y-0.5">
+                              <div>
+                                <span className="font-semibold">Days / Nights: </span>
+                                {(t.totalDays ?? "-") +
+                                  " / " +
+                                  (t.totalNights ?? "-")}
+                              </div>
+                              <div>
+                                <span className="font-semibold">Start Date: </span>
+                                {t.startDate
+                                  ? new Date(t.startDate).toLocaleDateString("en-GB")
+                                  : "-"}
+                              </div>
+                              <div>
+                                <span className="font-semibold">Total Pax: </span>
+                                {t.totalPax ?? "-"}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="p-4 rounded-2xl bg-white border border-gray-200 shadow-sm">
+                            <div className="text-[11px] uppercase tracking-wide text-gray-500">
+                              Pricing
+                            </div>
+                            <div className="mt-1 text-sm text-gray-700 space-y-0.5">
+                              <div>
+                                <span className="font-semibold">Net Cost (BO): </span>
+                                {t.netCost != null ? t.netCost : "-"}
+                              </div>
+                              <div>
+                                <span className="font-semibold">Price / Pax: </span>
+                                {t.pricePerPax != null ? t.pricePerPax : "-"}
+                              </div>
+                              <div>
+                                <span className="font-semibold">Risk Amount: </span>
+                                {t.riskAmount != null ? t.riskAmount : "-"}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Includes / Excludes */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="p-4 rounded-2xl bg-white border border-gray-200 shadow-sm">
+                            <h4 className="text-sm font-semibold text-[#321F6A] mb-2">
+                              Includes
+                            </h4>
+                            {Array.isArray(t.includes) && t.includes.length ? (
+                              <div className="flex flex-wrap gap-2">
+                                {t.includes.map((item, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="px-3 py-1 rounded-full bg-[rgba(133,112,238,0.08)] text-[#321F6A] border border-[rgba(133,112,238,0.2)] text-xs"
+                                  >
+                                    {item}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-gray-400">None</p>
+                            )}
+                          </div>
+
+                          <div className="p-4 rounded-2xl bg-white border border-gray-200 shadow-sm">
+                            <h4 className="text-sm font-semibold text-[#321F6A] mb-2">
+                              Excludes
+                            </h4>
+                            {Array.isArray(t.excludes) && t.excludes.length ? (
+                              <div className="flex flex-wrap gap-2">
+                                {t.excludes.map((item, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="px-3 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-100 text-xs"
+                                  >
+                                    {item}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-gray-400">None</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Itinerary + BO details */}
+                        <div className="p-4 rounded-2xl bg-white border border-gray-200 shadow-sm">
+                          <h4 className="text-sm font-semibold text-[#321F6A] mb-3">
+                            Day-wise Itinerary & Booking Order
+                          </h4>
+
+                          {Array.isArray(t.days) && t.days.length ? (
+                            <div className="space-y-4">
+                              {t.days.map((day, dIdx) => (
+                                <div
+                                  key={dIdx}
+                                  className="rounded-2xl border border-gray-200 bg-gray-50 p-3 space-y-2"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <div className="text-sm font-semibold text-gray-800">
+                                        {day.dayLabel || `Day ${dIdx + 1}`}
+                                      </div>
+                                      <div className="text-xs text-gray-500">
+                                        {day.date
+                                          ? new Date(day.date).toLocaleDateString(
+                                              "en-GB"
+                                            )
+                                          : "-"}
+                                      </div>
+                                    </div>
+                                    <div className="text-[11px] text-gray-500">
+                                      {Array.isArray(day.segments)
+                                        ? `${day.segments.length} segment(s)`
+                                        : "0 segment"}
+                                    </div>
+                                  </div>
+
+                                  {/* segments */}
+                                  {Array.isArray(day.segments) &&
+                                    day.segments.map((seg, sIdx) => {
+                                      const segCountry =
+                                        typeof seg.country === "object"
+                                          ? seg.country?.name
+                                          : seg.country;
+                                      const segState =
+                                        typeof seg.state === "object"
+                                          ? seg.state?.name
+                                          : seg.state;
+                                      const segDest =
+                                        typeof seg.destination === "object"
+                                          ? seg.destination?.name
+                                          : seg.destination;
+                                      const segTrip =
+                                        typeof seg.trip === "object"
+                                          ? seg.trip?.tripName
+                                          : seg.trip;
+                                      const segAddon =
+                                        typeof seg.selectedAddon === "object"
+                                          ? seg.selectedAddon?.addontripName
+                                          : seg.selectedAddon;
+
+                                      const segActs = Array.isArray(
+                                        seg.selectedActivities
+                                      )
+                                        ? seg.selectedActivities
+                                            .map((a) =>
+                                              typeof a === "object"
+                                                ? a.activityName
+                                                : a
+                                            )
+                                            .join(", ")
+                                        : "";
+
+                                      return (
+                                        <div
+                                          key={sIdx}
+                                          className="mt-2 rounded-xl bg-white border border-gray-200 p-3 space-y-3"
+                                        >
+                                          {/* segment header */}
+                                          <div className="flex items-center justify-between">
+                                            <div className="text-xs font-semibold text-gray-600">
+                                              Segment {sIdx + 1}
+                                            </div>
+                                          </div>
+
+                                          {/* basic info */}
+                                          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs text-gray-700">
+                                            <div>
+                                              <div className="font-semibold">
+                                                Country
+                                              </div>
+                                              <div>{segCountry || "-"}</div>
+                                            </div>
+                                            <div>
+                                              <div className="font-semibold">
+                                                State
+                                              </div>
+                                              <div>{segState || "-"}</div>
+                                            </div>
+                                            <div>
+                                              <div className="font-semibold">
+                                                Destination
+                                              </div>
+                                              <div>{segDest || "-"}</div>
+                                            </div>
+                                            <div>
+                                              <div className="font-semibold">
+                                                Trip
+                                              </div>
+                                              <div>{segTrip || "-"}</div>
+                                            </div>
+                                            <div>
+                                              <div className="font-semibold">
+                                                Add-on Trip
+                                              </div>
+                                              <div>{segAddon || "-"}</div>
+                                            </div>
+                                            <div>
+                                              <div className="font-semibold">
+                                                Activities
+                                              </div>
+                                              <div>{segActs || "-"}</div>
+                                            </div>
+                                          </div>
+
+                                          {/* BO blocks */}
+                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                                            {/* Trip Vehicles */}
+                                            {Array.isArray(seg.boTripVehicles) &&
+                                              seg.boTripVehicles.length > 0 && (
+                                                <div className="border border-gray-200 rounded-lg p-2 bg-gray-50">
+                                                  <div className="font-semibold text-gray-700 mb-1">
+                                                    Trip Vehicles
+                                                  </div>
+                                                  <div className="space-y-1">
+                                                    {seg.boTripVehicles.map(
+                                                      (v) => {
+                                                        const boUnit =
+                                                          Number(
+                                                            v.basePrice || 0
+                                                          ) || 0;
+                                                        const perc =
+                                                          Number(
+                                                            v.percentage || 0
+                                                          ) || 0;
+                                                        const itinUnit = Math.round(
+                                                          boUnit *
+                                                            (1 + perc / 100)
+                                                        );
+                                                        const qty =
+                                                          Number(v.qty || 0);
+                                                        return (
+                                                          <div
+                                                            key={v._id}
+                                                            className="flex justify-between border-b border-dashed border-gray-200 pb-1 last:border-none last:pb-0"
+                                                          >
+                                                            <div>
+                                                              <div className="font-medium">
+                                                                {v.category ||
+                                                                  "-"}
+                                                              </div>
+                                                              <div className="text-[11px] text-gray-500">
+                                                                BO: {boUnit} • %
+                                                                {perc} • Itin Unit:{" "}
+                                                                {itinUnit}
+                                                              </div>
+                                                            </div>
+                                                            <div className="text-right">
+                                                              <div>
+                                                                Qty:{" "}
+                                                                <b>{qty}</b>
+                                                              </div>
+                                                              <div className="text-[11px] text-gray-500">
+                                                                BO Total:{" "}
+                                                                <b>
+                                                                  {boUnit * qty}
+                                                                </b>
+                                                                <br />
+                                                                Itin Total:{" "}
+                                                                <b>
+                                                                  {itinUnit *
+                                                                    qty}
+                                                                </b>
+                                                              </div>
+                                                            </div>
+                                                          </div>
+                                                        );
+                                                      }
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              )}
+
+                                            {/* Addon Vehicles */}
+                                            {Array.isArray(seg.boAddonVehicles) &&
+                                              seg.boAddonVehicles.length > 0 && (
+                                                <div className="border border-gray-200 rounded-lg p-2 bg-gray-50">
+                                                  <div className="font-semibold text-gray-700 mb-1">
+                                                    Add-on Vehicles
+                                                  </div>
+                                                  <div className="space-y-1">
+                                                    {seg.boAddonVehicles.map(
+                                                      (v) => {
+                                                        const boUnit =
+                                                          Number(
+                                                            v.basePrice || 0
+                                                          ) || 0;
+                                                        const perc =
+                                                          Number(
+                                                            v.percentage || 0
+                                                          ) || 0;
+                                                        const itinUnit = Math.round(
+                                                          boUnit *
+                                                            (1 + perc / 100)
+                                                        );
+                                                        const qty =
+                                                          Number(v.qty || 0);
+                                                        return (
+                                                          <div
+                                                            key={v._id}
+                                                            className="flex justify-between border-b border-dashed border-gray-200 pb-1 last:border-none last:pb-0"
+                                                          >
+                                                            <div>
+                                                              <div className="font-medium">
+                                                                {v.category ||
+                                                                  "-"}
+                                                              </div>
+                                                              <div className="text-[11px] text-gray-500">
+                                                                BO: {boUnit} • %
+                                                                {perc} • Itin Unit:{" "}
+                                                                {itinUnit}
+                                                              </div>
+                                                            </div>
+                                                            <div className="text-right">
+                                                              <div>
+                                                                Qty:{" "}
+                                                                <b>{qty}</b>
+                                                              </div>
+                                                              <div className="text-[11px] text-gray-500">
+                                                                BO Total:{" "}
+                                                                <b>
+                                                                  {boUnit * qty}
+                                                                </b>
+                                                                <br />
+                                                                Itin Total:{" "}
+                                                                <b>
+                                                                  {itinUnit *
+                                                                    qty}
+                                                                </b>
+                                                              </div>
+                                                            </div>
+                                                          </div>
+                                                        );
+                                                      }
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              )}
+
+                                            {/* Foods */}
+                                            {Array.isArray(seg.boFoods) &&
+                                              seg.boFoods.length > 0 && (
+                                                <div className="border border-gray-200 rounded-lg p-2 bg-gray-50">
+                                                  <div className="font-semibold text-gray-700 mb-1">
+                                                    Foods
+                                                  </div>
+                                                  <div className="space-y-1">
+                                                    {seg.boFoods.map((f) => {
+                                                      const boUnit =
+                                                        Number(
+                                                          f.price || 0
+                                                        ) || 0;
+                                                      const perc =
+                                                        Number(
+                                                          f.percent || 0
+                                                        ) || 0;
+                                                      const itinUnit =
+                                                        f.itineraryUnit !=
+                                                          null &&
+                                                        !isNaN(
+                                                          f.itineraryUnit
+                                                        )
+                                                          ? Number(
+                                                              f.itineraryUnit
+                                                            )
+                                                          : Math.round(
+                                                              boUnit *
+                                                                (1 +
+                                                                  perc / 100)
+                                                            );
+                                                      const qty =
+                                                        Number(f.qty || 0);
+                                                      return (
+                                                        <div
+                                                          key={f._id}
+                                                          className="flex justify-between border-b border-dashed border-gray-200 pb-1 last:border-none last:pb-0"
+                                                        >
+                                                          <div>
+                                                            <div className="font-medium">
+                                                              {f.foodName ||
+                                                                "-"}
+                                                            </div>
+                                                            <div className="text-[11px] text-gray-500">
+                                                              {f.mealCategory} •{" "}
+                                                              {f.mealType}
+                                                              <br />
+                                                              BO: {boUnit} • %{" "}
+                                                              {perc} • Itin Unit:{" "}
+                                                              {itinUnit}
+                                                            </div>
+                                                          </div>
+                                                          <div className="text-right">
+                                                            <div>
+                                                              Qty:{" "}
+                                                              <b>{qty}</b>
+                                                            </div>
+                                                            <div className="text-[11px] text-gray-500">
+                                                              BO Total:{" "}
+                                                              <b>
+                                                                {boUnit * qty}
+                                                              </b>
+                                                              <br />
+                                                              Itin Total:{" "}
+                                                              <b>
+                                                                {itinUnit *
+                                                                  qty}
+                                                              </b>
+                                                            </div>
+                                                          </div>
+                                                        </div>
+                                                      );
+                                                    })}
+                                                  </div>
+                                                </div>
+                                              )}
+
+                                            {/* Activities */}
+                                            {Array.isArray(seg.boActivities) &&
+                                              seg.boActivities.length > 0 && (
+                                                <div className="border border-gray-200 rounded-lg p-2 bg-gray-50">
+                                                  <div className="font-semibold text-gray-700 mb-1">
+                                                    Activities
+                                                  </div>
+                                                  <div className="space-y-1">
+                                                    {seg.boActivities.map(
+                                                      (a) => {
+                                                        const boUnit =
+                                                          Number(
+                                                            a.price || 0
+                                                          ) || 0;
+                                                        const perc =
+                                                          Number(
+                                                            a.percentage || 0
+                                                          ) || 0;
+                                                        const itinUnit =
+                                                          a.itineraryUnit !=
+                                                            null &&
+                                                          !isNaN(
+                                                            a.itineraryUnit
+                                                          )
+                                                            ? Number(
+                                                                a.itineraryUnit
+                                                              )
+                                                            : Math.round(
+                                                                boUnit *
+                                                                  (1 +
+                                                                    perc /
+                                                                      100)
+                                                              );
+                                                        const qty =
+                                                          Number(a.qty || 0);
+                                                        return (
+                                                          <div
+                                                            key={a._id}
+                                                            className="flex justify-between border-b border-dashed border-gray-200 pb-1 last:border-none last:pb-0"
+                                                          >
+                                                            <div>
+                                                              <div className="font-medium">
+                                                                {a.name || "-"}
+                                                              </div>
+                                                              <div className="text-[11px] text-gray-500">
+                                                                BO: {boUnit} • %{" "}
+                                                                {perc} • Itin Unit:{" "}
+                                                                {itinUnit}
+                                                              </div>
+                                                            </div>
+                                                            <div className="text-right">
+                                                              <div>
+                                                                Qty:{" "}
+                                                                <b>{qty}</b>
+                                                              </div>
+                                                              <div className="text-[11px] text-gray-500">
+                                                                BO Total:{" "}
+                                                                <b>
+                                                                  {boUnit * qty}
+                                                                </b>
+                                                                <br />
+                                                                Itin Total:{" "}
+                                                                <b>
+                                                                  {itinUnit *
+                                                                    qty}
+                                                                </b>
+                                                              </div>
+                                                            </div>
+                                                          </div>
+                                                        );
+                                                      }
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              )}
+
+                                            {/* Accommodations */}
+                                            {Array.isArray(seg.boAccommodations) &&
+                                              seg.boAccommodations.length >
+                                                0 && (
+                                                <div className="border border-gray-200 rounded-lg p-2 bg-gray-50 md:col-span-2">
+                                                  <div className="font-semibold text-gray-700 mb-1">
+                                                    Accommodations
+                                                  </div>
+                                                  <div className="space-y-1">
+                                                    {seg.boAccommodations.map(
+                                                      (ac) => {
+                                                        const boUnit =
+                                                          Number(ac.bo || 0) ||
+                                                          0;
+                                                        const itinUnit =
+                                                          Number(
+                                                            ac.itinerary || 0
+                                                          ) || 0;
+                                                        const qty =
+                                                          Number(ac.qty || 0);
+                                                        return (
+                                                          <div
+                                                            key={ac._id}
+                                                            className="flex justify-between border-b border-dashed border-gray-200 pb-1 last:border-none last:pb-0"
+                                                          >
+                                                            <div>
+                                                              <div className="font-medium">
+                                                                {ac.propertyName ||
+                                                                  "-"}
+                                                              </div>
+                                                              <div className="text-[11px] text-gray-500">
+                                                                {ac.hotelCategory}{" "}
+                                                                • {ac.roomCategory}{" "}
+                                                                • Room:{" "}
+                                                                {ac.roomTypeCode}
+                                                                <br />
+                                                                Commission:{" "}
+                                                                {ac.commission ||
+                                                                  0}
+                                                                % • BO: {boUnit} •
+                                                                Itin: {itinUnit}
+                                                              </div>
+                                                            </div>
+                                                            <div className="text-right">
+                                                              <div>
+                                                                Qty:{" "}
+                                                                <b>{qty}</b>
+                                                              </div>
+                                                              <div className="text-[11px] text-gray-500">
+                                                                BO Total:{" "}
+                                                                <b>
+                                                                  {boUnit * qty}
+                                                                </b>
+                                                                <br />
+                                                                Itin Total:{" "}
+                                                                <b>
+                                                                  {itinUnit *
+                                                                    qty}
+                                                                </b>
+                                                              </div>
+                                                            </div>
+                                                          </div>
+                                                        );
+                                                      }
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              )}
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-gray-500">
+                              No day-wise details found.
+                            </p>
+                          )}
+                        </div>
+                      </>
+                    );
+                  })()}
+                </>
+              )}
+            </div>
+
+            {/* Modal footer */}
+            <div className="px-6 py-3 border-t border-gray-200 bg-white flex justify-end">
+              <button
+                onClick={() => {
+                  setViewModalOpen(false);
+                  setViewTour(null);
+                }}
+                className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

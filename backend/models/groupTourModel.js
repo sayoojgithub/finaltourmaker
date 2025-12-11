@@ -1,9 +1,9 @@
 
 import mongoose from "mongoose";
 
-// --- BO subdocs ---
+
 const boTripVehicleSchema = new mongoose.Schema({
-  _id: { type: String, required: true },                  // front-end uid()
+  _id: { type: String, required: true },                  
   category: String,
   vehicleId: { type: mongoose.Schema.Types.ObjectId, ref: "Vehicle" },
   percentage: Number,
@@ -70,7 +70,7 @@ const boAccommodationSchema = new mongoose.Schema({
   date: { type: Date },
 }, { _id: false });
 
-// --- existing segment + NEW BO arrays ---
+
 const daySegmentSchema = new mongoose.Schema({
   country: { type: mongoose.Schema.Types.ObjectId, ref: "Country" },
   state: { type: mongoose.Schema.Types.ObjectId, ref: "State" },
@@ -79,7 +79,7 @@ const daySegmentSchema = new mongoose.Schema({
   selectedAddon: { type: mongoose.Schema.Types.ObjectId, ref: "AddOnTrip" },
   selectedActivities: [{ type: mongoose.Schema.Types.ObjectId, ref: "Activity" }],
 
-  // NEW: persisted BO lines per segment
+  
   boTripVehicles: [boTripVehicleSchema],
   boAddonVehicles: [boAddonVehicleSchema],
   boFoods: [boFoodSchema],
@@ -123,7 +123,10 @@ const groupTourSchema = new mongoose.Schema({
   riskAmount: Number,
   includes: [String],
   excludes: [String],
-
+  activeStatus: {
+  type: Boolean,
+  default: false,   // Initially inactive
+},
   days: [daySchema],
 }, { timestamps: true });
 

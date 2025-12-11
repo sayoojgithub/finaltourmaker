@@ -91,7 +91,12 @@ const CreateVendor = () => {
   // Helpers to map API data -> Select options
   const toCountryOption = (c) => ({ _id: c._id, value: c._id, label: c.name });
   const toStateOption = (s) => ({ _id: s._id, value: s._id, label: s.name });
-  const toDestinationOption = (d) => ({ _id: d._id, value: d._id, label: d.name });
+  // const toDestinationOption = (d) => ({ _id: d._id, value: d._id, label: d.name });
+const toDestinationOption = (d) => ({
+  _id: d._id,
+  value: d._id,
+  label: d.activeStatus ? d.name : `${d.name} (inactive)`, // 👈 NEW
+});
 
   const countryOptions = countries.map(toCountryOption);
   const stateOptions = states.map(toStateOption);
@@ -305,9 +310,17 @@ const CreateVendor = () => {
       setSelectedState(stateOpt);
 
       // Fetch destinations for country+state, then select
+      // const destinationRes = await API.get(
+      //   `/purchaser/destinationsByCountryAndState/${vendor.country}/${vendor.state}`
+      // );
       const destinationRes = await API.get(
-        `/purchaser/destinationsByCountryAndState/${vendor.country}/${vendor.state}`
-      );
+  `/purchaser/destinationsByCountryAndState/${vendor.country}/${vendor.state}`,
+  {
+    params: {
+      currentDestinationId: vendor.destination?._id || vendor.destination, // 👈 NEW
+    },
+  }
+);
       setDestinations(destinationRes.data || []);
       const destinationOptionsLocal = (destinationRes.data || []).map(toDestinationOption);
       const destOpt = destinationOptionsLocal.find(

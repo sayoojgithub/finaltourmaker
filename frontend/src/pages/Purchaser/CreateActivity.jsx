@@ -88,10 +88,23 @@ const CreateActivity = () => {
   // ---------- options ----------
   const countryOptions = countries.map((c) => ({ value: c._id, label: c.name }));
   const stateOptions = states.map((s) => ({ value: s._id, label: s.name }));
-  const destinationOptions = destinations.map((d) => ({ value: d._id, label: d.name }));
-  const vendorOptions = vendors.map((v) => ({ value: v._id, label: v.name }));
-  const tripOptions = trips.map((t) => ({ value: t._id, label: t.tripName }));
+  // const destinationOptions = destinations.map((d) => ({ value: d._id, label: d.name }));
+  // const vendorOptions = vendors.map((v) => ({ value: v._id, label: v.name }));
+  // const tripOptions = trips.map((t) => ({ value: t._id, label: t.tripName }));
+  const destinationOptions = destinations.map((d) => ({
+  value: d._id,
+  label: d.activeStatus === false ? `${d.name} (inactive)` : d.name,
+}));
 
+const vendorOptions = vendors.map((v) => ({
+  value: v._id,
+  label: v.activeStatus === false ? `${v.name} (inactive)` : v.name,
+}));
+
+const tripOptions = trips.map((t) => ({
+  value: t._id,
+  label: t.activeStatus === false ? `${t.tripName} (inactive)` : t.tripName,
+}));
   const fetchActivities = async () => {
     try {
       const res = await API.get("/purchaser/activities", {
@@ -126,46 +139,107 @@ const CreateActivity = () => {
     }
   };
 
-  const fetchDestinations = async (countryId, stateId) => {
-    try {
-      if (countryId && stateId) {
-        const res = await API.get(
-          `/purchaser/destinationsByCountryAndState/${countryId}/${stateId}`
-        );
-        setDestinations(res.data);
-      } else {
-        setDestinations([]);
+  // const fetchDestinations = async (countryId, stateId) => {
+  //   try {
+  //     if (countryId && stateId) {
+  //       const res = await API.get(
+  //         `/purchaser/destinationsByCountryAndState/${countryId}/${stateId}`
+  //       );
+  //       setDestinations(res.data);
+  //     } else {
+  //       setDestinations([]);
+  //     }
+  //   } catch (err) {
+  //     toast.error(`Error fetching destinations: ${err.message}`);
+  //   }
+  // };
+  const fetchDestinations = async (countryId, stateId, currentDestinationId) => {
+  try {
+    if (countryId && stateId) {
+      let url = `/purchaser/destinationsByCountryAndState/${countryId}/${stateId}`;
+      if (currentDestinationId) {
+        url += `?currentDestinationId=${encodeURIComponent(currentDestinationId)}`;
       }
-    } catch (err) {
-      toast.error(`Error fetching destinations: ${err.message}`);
+      const res = await API.get(url);
+      setDestinations(res.data);
+    } else {
+      setDestinations([]);
     }
-  };
+  } catch (err) {
+    toast.error(`Error fetching destinations: ${err.message}`);
+  }
+};
 
+
+  // useEffect(() => {
+  //   fetchDestinations(formData.country, formData.state);
+  // }, [formData.country, formData.state]);
   useEffect(() => {
-    fetchDestinations(formData.country, formData.state);
-  }, [formData.country, formData.state]);
+  if (!formData.country || !formData.state) return;
+  if (editingActivityId) return; // 👈 don't override while editing
+  fetchDestinations(formData.country, formData.state);
+}, [formData.country, formData.state, editingActivityId]);
 
-  const fetchData = async (countryId, stateId, destinationId) => {
-    try {
-      if (countryId && stateId && destinationId) {
-        const [vendorsRes, tripsRes] = await Promise.all([
-          API.get(`/purchaser/vendorsOfActivities/${countryId}/${stateId}/${destinationId}`),
-          API.get(`/purchaser/tripsByLocation/${countryId}/${stateId}/${destinationId}`),
-        ]);
-        setVendors(vendorsRes.data);
-        setTrips(tripsRes.data);
-      } else {
-        setVendors([]);
-        setTrips([]);
+  // const fetchData = async (countryId, stateId, destinationId) => {
+  //   try {
+  //     if (countryId && stateId && destinationId) {
+  //       const [vendorsRes, tripsRes] = await Promise.all([
+  //         API.get(`/purchaser/vendorsOfActivities/${countryId}/${stateId}/${destinationId}`),
+  //         API.get(`/purchaser/tripsByLocation/${countryId}/${stateId}/${destinationId}`),
+  //       ]);
+  //       setVendors(vendorsRes.data);
+  //       setTrips(tripsRes.data);
+  //     } else {
+  //       setVendors([]);
+  //       setTrips([]);
+  //     }
+  //   } catch (err) {
+  //     toast.error(`Error fetching vendors/trips: ${err.message}`);
+  //   }
+  // };
+  const fetchData = async (
+  countryId,
+  stateId,
+  destinationId,
+  currentVendorId,
+  currentTripId
+) => {
+  try {
+    if (countryId && stateId && destinationId) {
+      let vendorsUrl = `/purchaser/vendorsOfActivities/${countryId}/${stateId}/${destinationId}`;
+      if (currentVendorId) {
+        vendorsUrl += `?currentVendorId=${encodeURIComponent(currentVendorId)}`;
       }
-    } catch (err) {
-      toast.error(`Error fetching vendors/trips: ${err.message}`);
-    }
-  };
 
-  useEffect(() => {
-    fetchData(formData.country, formData.state, formData.destination);
-  }, [formData.country, formData.state, formData.destination]);
+      let tripsUrl = `/purchaser/tripsByLocation/${countryId}/${stateId}/${destinationId}`;
+      if (currentTripId) {
+        tripsUrl += `?currentTripId=${encodeURIComponent(currentTripId)}`;
+      }
+
+      const [vendorsRes, tripsRes] = await Promise.all([
+        API.get(vendorsUrl),
+        API.get(tripsUrl),
+      ]);
+
+      setVendors(vendorsRes.data);
+      setTrips(tripsRes.data);
+    } else {
+      setVendors([]);
+      setTrips([]);
+    }
+  } catch (err) {
+    toast.error(`Error fetching vendors/trips: ${err.message}`);
+  }
+};
+
+  // useEffect(() => {
+  //   fetchData(formData.country, formData.state, formData.destination);
+  // }, [formData.country, formData.state, formData.destination]);
+useEffect(() => {
+  if (!formData.country || !formData.state || !formData.destination) return;
+  if (editingActivityId) return; // 👈 don't override while editing
+  fetchData(formData.country, formData.state, formData.destination);
+}, [formData.country, formData.state, formData.destination, editingActivityId]);
 
   const handleFieldChange = (index, field, value) => {
     const updated = [...priceFields];
@@ -192,40 +266,81 @@ const CreateActivity = () => {
     setPriceFields(updated);
   };
 
-  const handleEdit = async (activity) => {
-    try {
-      setEditingActivityId(activity._id);
+  // const handleEdit = async (activity) => {
+  //   try {
+  //     setEditingActivityId(activity._id);
 
-      await fetchStates(activity.country?._id);
-      await fetchDestinations(activity.country?._id, activity.state?._id);
-      await fetchData(activity.country?._id, activity.state?._id, activity.destination?._id);
+  //     await fetchStates(activity.country?._id);
+  //     await fetchDestinations(activity.country?._id, activity.state?._id);
+  //     await fetchData(activity.country?._id, activity.state?._id, activity.destination?._id);
 
-      setFormData({
-        country: activity.country?._id || "",
-        state: activity.state?._id || "",
-        destination: activity.destination?._id || "",
-        vendor: activity.vendor?._id || "",
-        trip: activity.trip?._id || "",
-        activityName: activity.activityName || "",
-        description: activity.description || "",
-      });
+  //     setFormData({
+  //       country: activity.country?._id || "",
+  //       state: activity.state?._id || "",
+  //       destination: activity.destination?._id || "",
+  //       vendor: activity.vendor?._id || "",
+  //       trip: activity.trip?._id || "",
+  //       activityName: activity.activityName || "",
+  //       description: activity.description || "",
+  //     });
 
-      setImageUrl(activity.imageUrl || "");
-      setPriceFields(
-        activity.prices?.length
-          ? activity.prices.map((p) => ({
-              from: p.validFrom?.slice(0, 10) || "",
-              to: p.validTo?.slice(0, 10) || "",
-              price: p.price || "",
-              percentage: p.percentage || "",
-              itineraryPrice: p.itineraryPrice || "",
-            }))
-          : [{ from: "", to: "", price: "", percentage: "", itineraryPrice: "" }]
-      );
-    } catch (err) {
-      toast.error(`Error during editing: ${err.message}`);
-    }
-  };
+  //     setImageUrl(activity.imageUrl || "");
+  //     setPriceFields(
+  //       activity.prices?.length
+  //         ? activity.prices.map((p) => ({
+  //             from: p.validFrom?.slice(0, 10) || "",
+  //             to: p.validTo?.slice(0, 10) || "",
+  //             price: p.price || "",
+  //             percentage: p.percentage || "",
+  //             itineraryPrice: p.itineraryPrice || "",
+  //           }))
+  //         : [{ from: "", to: "", price: "", percentage: "", itineraryPrice: "" }]
+  //     );
+  //   } catch (err) {
+  //     toast.error(`Error during editing: ${err.message}`);
+  //   }
+  // };
+const handleEdit = async (activity) => {
+  try {
+    setEditingActivityId(activity._id);
+
+    const countryId = activity.country?._id;
+    const stateId = activity.state?._id;
+    const destinationId = activity.destination?._id;
+    const vendorId = activity.vendor?._id;
+    const tripId = activity.trip?._id;
+
+    await fetchStates(countryId);
+    await fetchDestinations(countryId, stateId, destinationId); // 👈 include currentDestinationId
+    await fetchData(countryId, stateId, destinationId, vendorId, tripId); // 👈 include currentVendorId & currentTripId
+
+    setFormData({
+      country: countryId || "",
+      state: stateId || "",
+      destination: destinationId || "",
+      vendor: vendorId || "",
+      trip: tripId || "",
+      activityName: activity.activityName || "",
+      description: activity.description || "",
+    });
+
+    setImageUrl(activity.imageUrl || "");
+
+    setPriceFields(
+      activity.prices?.length
+        ? activity.prices.map((p) => ({
+            from: p.validFrom?.slice(0, 10) || "",
+            to: p.validTo?.slice(0, 10) || "",
+            price: p.price || "",
+            percentage: p.percentage || "",
+            itineraryPrice: p.itineraryPrice || "",
+          }))
+        : [{ from: "", to: "", price: "", percentage: "", itineraryPrice: "" }]
+    );
+  } catch (err) {
+    toast.error(`Error during editing: ${err.message}`);
+  }
+};
 
   const handleCreateActivity = async () => {
     const requiredFields = {

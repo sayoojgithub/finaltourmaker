@@ -111,8 +111,18 @@ const CreateAccomadation = () => {
   // helpers to keep JSX tiny for react-selects
   const countryOptions = countries.map((c) => ({ value: c._id, label: c.name }));
   const stateOptions = states.map((s) => ({ value: s._id, label: s.name }));
-  const destinationOptions = destinations.map((d) => ({ value: d._id, label: d.name }));
-  const vendorOptions = vendors.map((v) => ({ value: v._id, label: v.name }));
+  // const destinationOptions = destinations.map((d) => ({ value: d._id, label: d.name }));
+  const destinationOptions = destinations.map((d) => ({
+  value: d._id,
+  label: d.activeStatus ? d.name : `${d.name} (inactive)`,   // 👈
+}));
+
+  // const vendorOptions = vendors.map((v) => ({ value: v._id, label: v.name }));
+  const vendorOptions = vendors.map((v) => ({
+  value: v._id,
+  label: v.activeStatus ? v.name : `${v.name} (inactive)`,   // 👈
+}));
+
   const hotelOptions = [
     { value: "Standard", label: "Standard" },
     { value: "Deluxe", label: "Deluxe" },
@@ -242,34 +252,69 @@ const CreateAccomadation = () => {
 
     setSelectedState(stateId);
 
-    if (countryId && stateId) {
-      try {
-        const destinationRes = await API.get(
-          `/purchaser/destinationsByCountryAndState/${countryId}/${stateId}`
-        );
-        setDestinations(destinationRes.data);
-      } catch (error) {
-        console.error("Error fetching destinations:", error);
+    // if (countryId && stateId) {
+    //   try {
+    //     const destinationRes = await API.get(
+    //       `/purchaser/destinationsByCountryAndState/${countryId}/${stateId}`
+    //     );
+    //     setDestinations(destinationRes.data);
+    //   } catch (error) {
+    //     console.error("Error fetching destinations:", error);
+    //   }
+    // }
+   if (countryId && stateId) {
+  try {
+    const destinationRes = await API.get(
+      `/purchaser/destinationsByCountryAndState/${countryId}/${stateId}`,
+      {
+        params: {
+          currentDestinationId: destinationId || undefined,   // 👈 include current dest
+        },
       }
-    }
+    );
+    setDestinations(destinationRes.data || []);
+  } catch (error) {
+    console.error("Error fetching destinations:", error);
+  }
+}
 
     setSelectedDestination(destinationId);
 
-    if (countryId && stateId && destinationId) {
-      try {
-        const vendorRes = await API.get(
-          `/purchaser/vendorsOfHotels/${countryId}/${stateId}/${destinationId}`
-        );
-        setVendors(vendorRes.data);
-        const vendorExists = vendorRes.data.find((v) => v._id === vendorId);
-        setSelectedVendor(vendorExists ? vendorId : "");
-      } catch (error) {
-        console.error("Error fetching vendors:", error);
+    // if (countryId && stateId && destinationId) {
+    //   try {
+    //     const vendorRes = await API.get(
+    //       `/purchaser/vendorsOfHotels/${countryId}/${stateId}/${destinationId}`
+    //     );
+    //     setVendors(vendorRes.data);
+    //     const vendorExists = vendorRes.data.find((v) => v._id === vendorId);
+    //     setSelectedVendor(vendorExists ? vendorId : "");
+    //   } catch (error) {
+    //     console.error("Error fetching vendors:", error);
+    //   }
+    // } else {
+    //   setSelectedVendor("");
+    // }
+   if (countryId && stateId && destinationId) {
+  try {
+    const vendorRes = await API.get(
+      `/purchaser/vendorsOfHotels/${countryId}/${stateId}/${destinationId}`,
+      {
+        params: {
+          currentVendorId: vendorId || undefined,             // 👈 include current vendor
+        },
       }
-    } else {
-      setSelectedVendor("");
-    }
+    );
+    setVendors(vendorRes.data || []);
 
+    // now backend guarantees current vendor (even inactive) is present if it exists
+    const vendorExists = vendorRes.data.find((v) => v._id === vendorId);
+    setSelectedVendor(vendorExists ? vendorId : "");
+  } catch (error) {
+    console.error("Error fetching vendors:", error);
+  }
+} else {
+  setSelectedVendor("");
+}
     const formatDateForInput = (dateStr) => {
       const date = new Date(dateStr);
       const yyyy = date.getFullYear();

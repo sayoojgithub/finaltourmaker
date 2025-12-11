@@ -97,8 +97,19 @@ const CreateVehicle = () => {
   // Map arrays -> options
   const countryOptions = countries.map((c) => ({ _id: c._id, value: c._id, label: c.name }));
   const stateOptions = states.map((s) => ({ _id: s._id, value: s._id, label: s.name }));
-  const destinationOptions = destinations.map((d) => ({ _id: d._id, value: d._id, label: d.name }));
-  const vendorOptions = vendors.map((v) => ({ _id: v._id, value: v._id, label: v.name }));
+  // const destinationOptions = destinations.map((d) => ({ _id: d._id, value: d._id, label: d.name }));
+  const destinationOptions = destinations.map((d) => ({
+  _id: d._id,
+  value: d._id,
+  label: d.activeStatus ? d.name : `${d.name} (inactive)`, // needs activeStatus from backend
+}));
+
+  // const vendorOptions = vendors.map((v) => ({ _id: v._id, value: v._id, label: v.name }));
+  const vendorOptions = vendors.map((v) => ({
+  _id: v._id,
+  value: v._id,
+  label: v.activeStatus ? v.name : `${v.name} (inactive)`, // 👈 shows inactive in edit
+}));
   const categoryOptions = categories.map((c) => ({ value: c, label: c }));
 
   // Fetch countries on mount
@@ -203,11 +214,30 @@ const CreateVehicle = () => {
       setSelectedDestination(dId);
 
       // Load dependent lists in parallel
-      const [statesRes, destinationsRes, vendorsRes] = await Promise.all([
-        API.get(`/purchaser/states/${cId}`),
-        API.get(`/purchaser/destinationsByCountryAndState/${cId}/${sId}`),
-        API.get(`/purchaser/vendorsOfVehicles/${cId}/${sId}/${dId}`),
-      ]);
+      // const [statesRes, destinationsRes, vendorsRes] = await Promise.all([
+      //   API.get(`/purchaser/states/${cId}`),
+      //   API.get(`/purchaser/destinationsByCountryAndState/${cId}/${sId}`),
+      //   API.get(`/purchaser/vendorsOfVehicles/${cId}/${sId}/${dId}`),
+      // ]);
+     const [statesRes, destinationsRes, vendorsRes] = await Promise.all([
+  API.get(`/purchaser/states/${cId}`),
+  API.get(
+    `/purchaser/destinationsByCountryAndState/${cId}/${sId}`,
+    {
+      params: {
+        currentDestinationId: dId || undefined, // 👈 include current destination
+      },
+    }
+  ),
+  API.get(
+    `/purchaser/vendorsOfVehicles/${cId}/${sId}/${dId}`,
+    {
+      params: {
+        currentVendorId: vId || undefined, // 👈 include current vendor
+      },
+    }
+  ),
+]);
 
       setStates(statesRes.data || []);
       setDestinations(destinationsRes.data || []);
@@ -223,14 +253,21 @@ const CreateVehicle = () => {
         .find((o) => o.value === sId) || null;
       setStateOpt(sOpt);
 
-      const dOpt = (destinationsRes.data || []).map((d) => ({ _id: d._id, value: d._id, label: d.name }))
-        .find((o) => o.value === dId) || null;
-      setDestinationOpt(dOpt);
-
+      // const dOpt = (destinationsRes.data || []).map((d) => ({ _id: d._id, value: d._id, label: d.name }))
+      //   .find((o) => o.value === dId) || null;
+      // setDestinationOpt(dOpt);
+      const dOpt = (destinationsRes.data || [])
+  .map((d) => ({ _id: d._id, value: d._id, label: d.activeStatus ? d.name : `${d.name} (inactive)` }))
+  .find((o) => o.value === dId) || null;
+setDestinationOpt(dOpt);
       setSelectedVendor(vId);
-      const vOpt = (vendorsRes.data || []).map((v) => ({ _id: v._id, value: v._id, label: v.name }))
-        .find((o) => o.value === vId) || null;
-      setVendorOpt(vOpt);
+      // const vOpt = (vendorsRes.data || []).map((v) => ({ _id: v._id, value: v._id, label: v.name }))
+      //   .find((o) => o.value === vId) || null;
+      // setVendorOpt(vOpt);
+      const vOpt = (vendorsRes.data || [])
+  .map((v) => ({ _id: v._id, value: v._id, label: v.activeStatus ? v.name : `${v.name} (inactive)` }))
+  .find((o) => o.value === vId) || null;
+setVendorOpt(vOpt);
 
       // Prefill form
       setFormData({
