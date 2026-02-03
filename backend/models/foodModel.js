@@ -13,6 +13,9 @@ const rowSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Vendor",
   },
+    advancePercentage: {
+    type: Number,
+  },
   mealType: { type: String },
   mealCategory: { type: String },
   foodName: { type: String },

@@ -282,7 +282,7 @@ export default function CreateClient({ prefill = null, onCancel }) {
       return toast.error("Name is required"), false;
     if (!/^\d{10,15}$/.test(String(form.mobileNumber || "").trim()))
       return toast.error("Mobile number must be 10–15 digits"), false;
-    if (!form.tourType) return toast.error("Tour type is required"), false;
+    if (!form.tourType) return toast.error("Tour category is required"), false;
     if (!form.primaryDestinationName)
       return toast.error("Primary destination is required"), false;
     if (!form.groupType) return toast.error("Group type is required"), false;

@@ -16,7 +16,7 @@ import EntryStaffProfile from '../pages/Entry/EntryStaffProfile'
 import FrontOfficerProfile from '../pages/FrontOfficer/FrontOfficerProfile'
 import FrontOfficerManagerfProfile from '../pages/FrontOfficerManager/FrontOfficerManagerProfile'
 import ExecutiveProfile from '../pages/Executive/ExecutiveProfile'
-
+import Pay from '../pages/Pay/Pay'
 
 import {Routes, Route} from "react-router-dom"
 const Routers = () => {
@@ -25,6 +25,7 @@ const Routers = () => {
     <Route path='/home' element={<Home/>}/>
     <Route path='/login' element={<Login/>}/>
     <Route path='/adminLogin' element={<AdminLogin/>}/>
+    <Route path="/pay" element={<Pay />} />
     {/* <Route path='/adminDashboard' element={<Dashboard/>}/>
     <Route path='/salesProfile' element={<SalesProfile/>}/> */}
     {/* Protected Admin Route */}

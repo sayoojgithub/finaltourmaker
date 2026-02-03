@@ -17,12 +17,22 @@ const activitySchema = new mongoose.Schema({
   trip: { type: mongoose.Schema.Types.ObjectId, ref: "Trip", required: true },
   activityName: { type: String, required: true },
   description: { type: String, required: true },
+   advancePercentage: {
+      type: Number,
+    },
   prices: [priceSchema],
   activeStatus: {
     type: Boolean,
     default: true,
   },
-  imageUrl: { type: String },
+   imageUrl: { type: String, default: "" },
+   secondImageUrl: { type: String, default: "" },
+   thirdImageUrl: { type: String, default: "" },
+   fourthImageUrl: { type: String, default: "" },
+    fifthImageUrl: { type: String, default: "" },
+    sixthImageUrl: { type: String, default: "" },
+    seventhImageUrl: { type: String, default: "" },
+    eightImageUrl: { type: String, default: "" },
   purchaser: { type: mongoose.Schema.Types.ObjectId, ref: "Purchaser", required: true },
   company: { type: mongoose.Schema.Types.ObjectId, ref: "Company", required: true },
 }, { timestamps: true });

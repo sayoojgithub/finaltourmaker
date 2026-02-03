@@ -44,6 +44,13 @@ const vehicleSchema = new mongoose.Schema({
   type: String,
   default: "",
 },
+secondImageUrl: { type: String, default: "" },
+thirdImageUrl: { type: String, default: "" },
+fourthImageUrl: { type: String, default: "" },
+fifthImageUrl: { type: String, default: "" },
+sixthImageUrl: { type: String, default: "" },
+seventhImageUrl: { type: String, default: "" },
+eightImageUrl: { type: String, default: "" },
  activeStatus: {
     type: Boolean,
     default: true,
@@ -52,6 +59,10 @@ const vehicleSchema = new mongoose.Schema({
   type: Number,
   required: true,
 },
+  advancePercentage: {
+    type: Number,
+    required: true,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

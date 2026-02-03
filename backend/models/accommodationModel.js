@@ -43,7 +43,15 @@ const accommodationSchema = new mongoose.Schema({
   state: { type: mongoose.Schema.Types.ObjectId, ref: "State" },
   destination: { type: mongoose.Schema.Types.ObjectId, ref: "Destination" },
   vendor: { type: mongoose.Schema.Types.ObjectId, ref: "Vendor" },
-
+  advancePercentage: { type: Number, default: 0 },
+   imageUrl: { type: String, default: "" },
+  secondImageUrl: { type: String, default: "" },
+  thirdImageUrl: { type: String, default: "" },
+  fourthImageUrl: { type: String, default: "" },   
+  fifthImageUrl: { type: String, default: "" },
+  sixthImageUrl: { type: String, default: "" },
+  seventhImageUrl: { type: String, default: "" },
+  eightImageUrl: { type: String, default: "" },
   formSections: [priceSectionSchema],                 // original values
   formSectionsWithCommission: [priceSectionSchema],   // inflated values
   accommodationCode: {

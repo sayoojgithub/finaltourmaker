@@ -6,24 +6,40 @@ const boTripVehicleSchema = new mongoose.Schema({
   _id: { type: String, required: true },                  
   category: String,
   vehicleId: { type: mongoose.Schema.Types.ObjectId, ref: "Vehicle" },
+   // NEW
+    vehicleName: { type: String },
   percentage: Number,
   basePrice: Number,
   qty: Number,
+  advancePercentage: Number,
+  advanceUnit: Number,
+  advanceTotal: Number,
   tripId: { type: mongoose.Schema.Types.ObjectId, ref: "Trip" },
   tripName: String,
   date: { type: Date },
+   // NEW
+    vendorId: { type: mongoose.Schema.Types.ObjectId, ref: "Vendor" },
+    vendorName: { type: String },
 }, { _id: false });
 
 const boAddonVehicleSchema = new mongoose.Schema({
   _id: { type: String, required: true },
   category: String,
   vehicleId: { type: mongoose.Schema.Types.ObjectId, ref: "Vehicle" },
+   // NEW
+    vehicleName: { type: String },
   percentage: Number,
   basePrice: Number,
   qty: Number,
+  advancePercentage: Number,
+advanceUnit: Number,
+advanceTotal: Number,
   addonTripId: { type: mongoose.Schema.Types.ObjectId, ref: "AddOnTrip" },
   addonTripName: String,
   date: { type: Date },
+   // NEW
+    vendorId: { type: mongoose.Schema.Types.ObjectId, ref: "Vendor" },
+    vendorName: { type: String },
 }, { _id: false });
 
 const boFoodSchema = new mongoose.Schema({
@@ -35,10 +51,15 @@ const boFoodSchema = new mongoose.Schema({
   percent: Number,
   itineraryUnit: Number,
   qty: Number,
+  advancePercentage: Number,
+advanceUnit: Number,
+advanceTotal: Number,
   tripId: { type: mongoose.Schema.Types.ObjectId, ref: "Trip" },
   tripName: String,
   date: { type: Date },
   vendorId: { type: mongoose.Schema.Types.ObjectId, ref: "Vendor", default: null },
+  // NEW
+    vendorName: { type: String },
 }, { _id: false });
 
 const boActivitySchema = new mongoose.Schema({
@@ -49,9 +70,15 @@ const boActivitySchema = new mongoose.Schema({
   percentage: Number,
   itineraryUnit: Number,
   qty: Number,
+  advancePercentage: Number,
+advanceUnit: Number,
+advanceTotal: Number,
   tripId: { type: mongoose.Schema.Types.ObjectId, ref: "Trip" },
   tripName: String,
   date: { type: Date },
+   // NEW
+    vendorId: { type: mongoose.Schema.Types.ObjectId, ref: "Vendor" },
+    vendorName: { type: String },
 }, { _id: false });
 
 const boAccommodationSchema = new mongoose.Schema({
@@ -65,9 +92,16 @@ const boAccommodationSchema = new mongoose.Schema({
   bo: Number,
   itinerary: Number,
   qty: Number,
+  advancePercentage: Number,
+advanceUnit: Number,
+advanceTotal: Number,
+
   tripId: { type: mongoose.Schema.Types.ObjectId, ref: "Trip" },
   tripName: String,
   date: { type: Date },
+      // NEW
+    vendorId: { type: mongoose.Schema.Types.ObjectId, ref: "Vendor" },
+    vendorName: { type: String },
 }, { _id: false });
 
 
@@ -112,6 +146,9 @@ const groupTourSchema = new mongoose.Schema({
   netCost: Number,
   pricePerPax: Number,
   totalPax: Number,
+  margin: { type: Number, default: 0 },
+  totalAdvance: { type: Number, default: 0 }, 
+advancePerPax: { type: Number, default: 0 }, 
   seatsAvailable: {
     type: Number,
     default: 0,          
@@ -120,10 +157,25 @@ const groupTourSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  confirmedClients: {
+  type: [
+    {
+      clientId: { type: mongoose.Schema.Types.ObjectId, ref: "Client", required: true },
+      clientName: { type: String, default: "" },
+      pax: { type: Number, required: true },
+      confirmedAt: { type: Date, required: true },
+    },
+  ],
+  default: [],
+},
   riskAmount: Number,
   includes: [String],
   excludes: [String],
   activeStatus: {
+  type: Boolean,
+  default: false,   // Initially inactive
+},
+ boCreatedStatus: {
   type: Boolean,
   default: false,   // Initially inactive
 },

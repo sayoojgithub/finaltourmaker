@@ -61,7 +61,7 @@ const vendorSchema = new mongoose.Schema(
     },
     services: {
       type: [String],
-      enum: ["Vehicle", "Hotels", "Activities", "Guide", "Rental", "Food"],
+      enum: ["Vehicle", "Hotels", "Activities", "Guide", "Rental", "Food", "Fixed Tour"],
       default: [],
     },
     vendorCode: {

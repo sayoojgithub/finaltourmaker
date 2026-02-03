@@ -162,6 +162,7 @@
 import React, { useState, useEffect } from "react";
 import { Menu, X, ChevronRight } from "lucide-react";
 import CreateDestination from "./CreateDestination";
+import DestinationImages from "./DestinationImages";
 import CreateVendor from "./CreateVendor";
 import CreateVehicle from "./CreateVehicle";
 import CreateAccomadation from "./CreateAccommodation";
@@ -174,7 +175,8 @@ import CreateFixedTour from "./CreateFixedTour";
 import GroupTourBO from "./GroupTourBo";
 const tabData = [
   { label: "Destination" },
-  { label: "Vender" },
+  { label: "Destination Images" },
+  { label: "Vendor" },
   { label: "Vehicle" },
   { label: "Accommodation" },
   { label: "Trip" },
@@ -230,16 +232,17 @@ export default function PurchaserProfile() {
   const renderTabContent = () => {
     switch (activeTab) {
       case 0:  return <CreateDestination />;
-      case 1:  return <CreateVendor />;
-      case 2:  return <CreateVehicle />;
-      case 3:  return <CreateAccomadation />;
-      case 4:  return <CreateTrip />;
-      case 5:  return <CreateAddOnTrip />;
-      case 6:  return <CreateActivity />;
-      case 7:  return <CreateFood />;
-      case 8:  // 👇 inject handler so child can open BO page
+      case 1: return <DestinationImages/>
+      case 2:  return <CreateVendor />;
+      case 3:  return <CreateVehicle />;
+      case 4:  return <CreateAccomadation />;
+      case 5:  return <CreateTrip />;
+      case 6:  return <CreateAddOnTrip />;
+      case 7:  return <CreateActivity />;
+      case 8:  return <CreateFood />;
+      case 9:  // 👇 inject handler so child can open BO page
         return <CreateGroupTour onOpenBO={openGroupTourBO} />;
-      case 9:  return <CreateFixedTour />;
+      case 10:  return <CreateFixedTour />;
       default: return null;
     }
   };

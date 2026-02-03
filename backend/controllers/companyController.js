@@ -221,54 +221,118 @@ export const updateBankDetails = async (req, res) => {
   }
 };
 
+// export const getCompanyTerms = async (req, res) => {
+//   try {
+//     const company = await Company.findById(req.userId);
+
+//     if (!company) {
+//       return res.status(404).json({ message: "Company not found" });
+//     }
+
+//     res.status(200).json(
+//       company.terms || {
+//         itineraryTerms: "",
+//         invoiceTerms: "",
+//         voucherTerms: "",
+//       }
+//     );
+//   } catch (err) {
+//     console.error("Error fetching company terms:", err);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
+
+
+
+// export const updateCompanyTerms = async (req, res) => {
+//   const { itineraryTerms, invoiceTerms, voucherTerms } = req.body;
+
+//   try {
+//     const company = await Company.findById(req.userId);
+
+//     if (!company) {
+//       return res.status(404).json({ message: "Company not found" });
+//     }
+
+//     company.terms = {
+//       itineraryTerms,
+//       invoiceTerms,
+//       voucherTerms,
+//     };
+
+//     await company.save();
+
+//     res
+//       .status(200)
+//       .json({ message: "Terms & Conditions updated successfully" });
+//   } catch (err) {
+//     console.error("Error updating company terms:", err);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
+const emptyTerms = () => ({
+  itineraryTerms: [],
+  invoiceTerms: [],
+  voucherTerms: [],
+  paymentPolicy: [],
+  cancellationPolicy: [],
+});
+
+/* ✅ sanitize incoming: accept array of {text} or string, IGNORE any _id */
+const sanitizePoints = (arr) => {
+  if (!Array.isArray(arr)) return [];
+  return arr
+    .map((x) => ({
+      text: (x?.text ?? x ?? "").toString().trim(),
+    }))
+    .filter((p) => p.text.length > 0);
+};
+
 export const getCompanyTerms = async (req, res) => {
   try {
-    const company = await Company.findById(req.userId);
+    const company = await Company.findById(req.userId).select("terms");
 
-    if (!company) {
-      return res.status(404).json({ message: "Company not found" });
-    }
+    if (!company) return res.status(404).json({ message: "Company not found" });
 
-    res.status(200).json(
-      company.terms || {
-        itineraryTerms: "",
-        invoiceTerms: "",
-        voucherTerms: "",
-      }
-    );
+    const terms = company.terms || {};
+    return res.status(200).json({
+      ...emptyTerms(),
+      ...terms, // will contain arrays of subdocs with _id + text
+    });
   } catch (err) {
     console.error("Error fetching company terms:", err);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
 export const updateCompanyTerms = async (req, res) => {
-  const { itineraryTerms, invoiceTerms, voucherTerms } = req.body;
-
   try {
     const company = await Company.findById(req.userId);
 
-    if (!company) {
-      return res.status(404).json({ message: "Company not found" });
-    }
+    if (!company) return res.status(404).json({ message: "Company not found" });
 
+    const incoming = req.body || {};
+
+    // ✅ IMPORTANT: do NOT allow frontend _id; mongoose will create ObjectIds
     company.terms = {
-      itineraryTerms,
-      invoiceTerms,
-      voucherTerms,
+      itineraryTerms: sanitizePoints(incoming.itineraryTerms),
+      invoiceTerms: sanitizePoints(incoming.invoiceTerms),
+      voucherTerms: sanitizePoints(incoming.voucherTerms),
+      paymentPolicy: sanitizePoints(incoming.paymentPolicy),
+      cancellationPolicy: sanitizePoints(incoming.cancellationPolicy),
     };
 
     await company.save();
 
-    res
-      .status(200)
-      .json({ message: "Terms & Conditions updated successfully" });
+    return res.status(200).json({
+      message: "Terms & Policies updated successfully",
+      terms: company.terms, // ✅ real _id values here
+    });
   } catch (err) {
     console.error("Error updating company terms:", err);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
   }
 };
-
 export const createBranch = async (req, res) => {
   try {
     const {
@@ -1178,3 +1242,216 @@ export async function removePincodes(req, res) {
     return res.status(500).json({ message: "Failed to remove pincodes" });
   }
 }
+
+
+function asInt(v, d) {
+  const n = parseInt(v, 10);
+  return Number.isFinite(n) && n > 0 ? n : d;
+}
+
+function escapeRegex(str) {
+  return String(str || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// GET /company/executives?mode=branch|franchisee|company&page=1&limit=10&executiveSearch=&branchSearch=&franchiseeSearch=
+export const listExecutivesForPercentage = async (req, res) => {
+  try {
+    const companyId = req.userId;
+
+    const mode = String(req.query.mode || "company").toLowerCase(); // branch | franchisee | company
+    const page = asInt(req.query.page, 1);
+    const limit = asInt(req.query.limit, 10);
+    const skip = (page - 1) * limit;
+
+    const executiveSearch = String(req.query.executiveSearch || "").trim();
+    const branchSearch = String(req.query.branchSearch || "").trim();
+    const franchiseeSearch = String(req.query.franchiseeSearch || "").trim();
+
+    const companyObjectId = new mongoose.Types.ObjectId(companyId);
+
+    const matchBase = {
+      company: companyObjectId,
+    };
+
+    // filter by type
+    if (mode === "branch") matchBase.type = "Branch";
+    else if (mode === "franchisee") matchBase.type = "Franchisee";
+    else matchBase.type = "Company";
+
+    const pipeline = [
+      { $match: matchBase },
+
+      // executive name filter
+      ...(executiveSearch
+        ? [
+            {
+              $match: {
+                name: { $regex: escapeRegex(executiveSearch), $options: "i" },
+              },
+            },
+          ]
+        : []),
+
+      // lookups (for entity name)
+      {
+        $lookup: {
+          from: "branches",
+          localField: "branch",
+          foreignField: "_id",
+          as: "branchDoc",
+        },
+      },
+      {
+        $lookup: {
+          from: "franchisees",
+          localField: "franchisee",
+          foreignField: "_id",
+          as: "franchiseeDoc",
+        },
+      },
+      {
+        $lookup: {
+          from: "companies",
+          localField: "company",
+          foreignField: "_id",
+          as: "companyDoc",
+        },
+      },
+
+      // entityName based on type
+      {
+        $addFields: {
+          branchDoc: { $arrayElemAt: ["$branchDoc", 0] },
+          franchiseeDoc: { $arrayElemAt: ["$franchiseeDoc", 0] },
+          companyDoc: { $arrayElemAt: ["$companyDoc", 0] },
+        },
+      },
+      {
+        $addFields: {
+          entityName: {
+            $switch: {
+              branches: [
+                {
+                  case: { $eq: ["$type", "Branch"] },
+                  then: { $ifNull: ["$branchDoc.branchName", "-"] },
+                },
+                {
+                  case: { $eq: ["$type", "Franchisee"] },
+                  then: { $ifNull: ["$franchiseeDoc.franchiseeName", "-"] },
+                },
+                {
+                  case: { $eq: ["$type", "Company"] },
+                  then: { $ifNull: ["$companyDoc.companyName", "-"] },
+                },
+              ],
+              default: "-",
+            },
+          },
+        },
+      },
+
+      // branch name filter
+      ...(mode === "branch" && branchSearch
+        ? [
+            {
+              $match: {
+                "branchDoc.branchName": {
+                  $regex: escapeRegex(branchSearch),
+                  $options: "i",
+                },
+              },
+            },
+          ]
+        : []),
+
+      // franchisee name filter
+      ...(mode === "franchisee" && franchiseeSearch
+        ? [
+            {
+              $match: {
+                "franchiseeDoc.franchiseeName": {
+                  $regex: escapeRegex(franchiseeSearch),
+                  $options: "i",
+                },
+              },
+            },
+          ]
+        : []),
+
+      // sort newest first
+      { $sort: { createdAt: -1 } },
+
+      {
+        $facet: {
+          items: [
+            { $skip: skip },
+            { $limit: limit },
+            {
+              $project: {
+                name: 1,
+                email: 1,
+                contactNumber: 1,
+                status: 1,
+                type: 1,
+                entityName: 1,
+                profileImage: 1,
+                pointPercentage: 1,
+                discountPercentage: 1,
+                createdAt: 1,
+              },
+            },
+          ],
+          meta: [{ $count: "total" }],
+        },
+      },
+    ];
+
+    const out = await Executive.aggregate(pipeline);
+    const items = out?.[0]?.items || [];
+    const total = out?.[0]?.meta?.[0]?.total || 0;
+
+    res.status(200).json({
+      items,
+      total,
+      page,
+      limit,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+    });
+  } catch (err) {
+    console.error("listExecutivesForIncentives error:", err);
+    res.status(500).json({ message: "Failed to load executives" });
+  }
+};
+
+// PUT /company/executives/:id/incentives
+export const updateExecutivePercentage = async (req, res) => {
+  try {
+    const companyId = req.userId;
+    const { id } = req.params;
+
+    const pointPercentage = Number(req.body.pointPercentage);
+    const discountPercentage = Number(req.body.discountPercentage);
+
+    if (!Number.isFinite(pointPercentage) || pointPercentage < 0 || pointPercentage > 100) {
+      return res.status(400).json({ message: "pointPercentage must be between 0 and 100" });
+    }
+    if (!Number.isFinite(discountPercentage) || discountPercentage < 0 || discountPercentage > 100) {
+      return res.status(400).json({ message: "discountPercentage must be between 0 and 100" });
+    }
+
+    const updated = await Executive.findOneAndUpdate(
+      { _id: id, company: companyId },
+      { pointPercentage, discountPercentage },
+      { new: true }
+    ).select("_id name pointPercentage discountPercentage");
+
+    if (!updated) {
+      return res.status(404).json({ message: "Executive not found" });
+    }
+
+    res.status(200).json({ message: "Updated", executive: updated });
+  } catch (err) {
+    console.error("updateExecutiveIncentives error:", err);
+    res.status(500).json({ message: "Failed to update incentives" });
+  }
+};

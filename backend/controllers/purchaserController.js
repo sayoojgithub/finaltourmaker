@@ -369,6 +369,135 @@ export const getDestinationsByCountryAndState = async (req, res) => {
   }
 };
 
+
+export const getDestinationsForSelect = async (req, res) => {
+  try {
+    const purchaserId = req.userId;
+    const purchaser = await Purchaser.findById(purchaserId);
+    if (!purchaser) {
+      return res
+        .status(404)
+        .json({ message: "Unauthorized: Purchaser not found or inactive." });
+    }
+
+    const { search = "" } = req.query;
+
+    const query = {
+      purchaser: purchaserId,
+      company: purchaser.company,
+      name: { $regex: search.trim(), $options: "i" },
+    };
+
+    const list = await Destination.find(query)
+      .select("_id name destinationCode activeStatus country state")
+      .populate("country", "name")
+      .populate("state", "name")
+      .sort({ name: 1 });
+
+    res.status(200).json(list);
+  } catch (error) {
+    console.error("Error fetching destinations for select:", error);
+    res.status(500).json({ message: "Internal server error." });
+  }
+};
+
+// ✅ fetch 8 image urls for one destination
+export const getDestinationImages = async (req, res) => {
+  try {
+    const purchaserId = req.userId;
+    const purchaser = await Purchaser.findById(purchaserId);
+    if (!purchaser) {
+      return res
+        .status(404)
+        .json({ message: "Unauthorized: Purchaser not found or inactive." });
+    }
+
+    const { destinationId } = req.params;
+
+    const destination = await Destination.findOne({
+      _id: destinationId,
+      purchaser: purchaserId,
+      company: purchaser.company,
+    }).select(
+      "_id name destinationCode imageUrl secondImageUrl thirdImageUrl fourthImageUrl fifthImageUrl sixthImageUrl seventhImageUrl eightImageUrl textColor"
+    );
+
+    if (!destination) {
+      return res.status(404).json({ message: "Destination not found." });
+    }
+
+    res.status(200).json({ success: true, data: destination });
+  } catch (error) {
+    console.error("Error fetching destination images:", error);
+    res.status(500).json({ message: "Internal server error." });
+  }
+};
+
+// ✅ update 8 image urls for one destination (no change to other fields)
+export const updateDestinationImages = async (req, res) => {
+  try {
+    const purchaserId = req.userId;
+    const purchaser = await Purchaser.findById(purchaserId);
+    if (!purchaser) {
+      return res
+        .status(404)
+        .json({ message: "Unauthorized: Purchaser not found or inactive." });
+    }
+
+    const { destinationId } = req.params;
+
+    const {
+      imageUrl = "",
+      secondImageUrl = "",
+      thirdImageUrl = "",
+      fourthImageUrl = "",
+      fifthImageUrl = "",
+      sixthImageUrl = "",
+      seventhImageUrl = "",
+      eightImageUrl = "",
+      textColor = "#000000",
+    } = req.body || {};
+
+    const updated = await Destination.findOneAndUpdate(
+      {
+        _id: destinationId,
+        purchaser: purchaserId,
+        company: purchaser.company,
+      },
+      {
+        $set: {
+          imageUrl,
+          secondImageUrl,
+          thirdImageUrl,
+          fourthImageUrl,
+          fifthImageUrl,
+          sixthImageUrl,
+          seventhImageUrl,
+          eightImageUrl,
+          textColor,
+        },
+      },
+      { new: true }
+    ).select(
+      "_id name destinationCode imageUrl secondImageUrl thirdImageUrl fourthImageUrl fifthImageUrl sixthImageUrl seventhImageUrl eightImageUrl textColor"
+    );
+
+    if (!updated) {
+      return res.status(404).json({ success: false, message: "Destination not found" });
+    }
+
+    res.status(200).json({ success: true, message: "Images updated", data: updated });
+  } catch (error) {
+    console.error("Error updating destination images:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+
+
+
+
+
 export const createVendor = async (req, res) => {
   try {
     const purchaserId = req.userId;
@@ -676,7 +805,15 @@ export const createVehicle = async (req, res) => {
       category,
       vehicle,
       imageUrl,
+      secondImageUrl,
+      thirdImageUrl,
+       fourthImageUrl,
+      fifthImageUrl,
+      sixthImageUrl,
+      seventhImageUrl,
+      eightImageUrl,
       percentage,
+      advancePercentage,
     } = req.body;
 
     if (
@@ -686,7 +823,8 @@ export const createVehicle = async (req, res) => {
       !vendorId ||
       !category ||
       !vehicle ||
-      percentage === undefined
+      percentage === undefined ||
+      advancePercentage === undefined // ✅ NEW
     ) {
       return res.status(400).json({ message: "All fields are required." });
     }
@@ -706,8 +844,16 @@ export const createVehicle = async (req, res) => {
       vendor: vendorId,
       category,
       vehicle,
-      imageUrl,
+      imageUrl: imageUrl || "",
+      secondImageUrl: secondImageUrl || "",
+      thirdImageUrl: thirdImageUrl || "",
+      fourthImageUrl: fourthImageUrl || "",
+      fifthImageUrl: fifthImageUrl || "",
+      sixthImageUrl: sixthImageUrl || "",
+      seventhImageUrl: seventhImageUrl || "",
+      eightImageUrl: eightImageUrl || "",
       percentage,
+      advancePercentage,
     });
 
     await newVehicle.save();
@@ -740,7 +886,15 @@ export const updateVehicle = async (req, res) => {
       category,
       vehicle,
       imageUrl,
+      secondImageUrl,
+      thirdImageUrl,
+      fourthImageUrl,
+      fifthImageUrl,
+      sixthImageUrl,
+      seventhImageUrl,
+      eightImageUrl,
       percentage,
+      advancePercentage,
     } = req.body;
 
     if (
@@ -750,7 +904,8 @@ export const updateVehicle = async (req, res) => {
       !vendorId ||
       !category ||
       !vehicle ||
-      percentage === undefined
+      percentage === undefined ||
+      advancePercentage === undefined
     ) {
       return res.status(400).json({ message: "All fields are required." });
     }
@@ -770,9 +925,16 @@ export const updateVehicle = async (req, res) => {
     vehicleToUpdate.vendor = vendorId;
     vehicleToUpdate.category = category;
     vehicleToUpdate.vehicle = vehicle;
-    vehicleToUpdate.imageUrl = imageUrl;
+    vehicleToUpdate.imageUrl = imageUrl || "";
+    vehicleToUpdate.secondImageUrl = secondImageUrl || "";
+    vehicleToUpdate.thirdImageUrl = thirdImageUrl || "";
+    vehicleToUpdate.fourthImageUrl = fourthImageUrl || "";
+    vehicleToUpdate.fifthImageUrl = fifthImageUrl || "";
+    vehicleToUpdate.sixthImageUrl = sixthImageUrl || "";
+    vehicleToUpdate.seventhImageUrl = seventhImageUrl || "";
+    vehicleToUpdate.eightImageUrl = eightImageUrl || "";
     vehicleToUpdate.percentage = percentage;
-
+    vehicleToUpdate.advancePercentage = advancePercentage;
     await vehicleToUpdate.save();
 
     res
@@ -963,7 +1125,18 @@ export const createAccommodation = async (req, res) => {
     console.log(req.body, "full accommodation");
 
     const companyId = purchaser.company;
-    const { formSections, ...rest } = req.body;
+    const {
+  formSections,
+  imageUrl = "",
+  secondImageUrl = "",
+  thirdImageUrl = "",
+  fourthImageUrl = "",
+  fifthImageUrl = "",
+  sixthImageUrl = "",
+  seventhImageUrl = "",
+  eightImageUrl = "",
+  ...rest
+} = req.body;
     const { email, destination, roomCategory } = rest;
 
     // Check for exact match: company, email, destination, roomCategory
@@ -1021,13 +1194,24 @@ export const createAccommodation = async (req, res) => {
     });
 
     const accommodation = new Accommodation({
-      ...rest,
-      purchaserId,
-      companyId,
-      accommodationCode,
-      formSections,
-      formSectionsWithCommission,
-    });
+  ...rest,
+  purchaserId,
+  companyId,
+  accommodationCode,
+
+  imageUrl: String(imageUrl || ""),
+  secondImageUrl: String(secondImageUrl || ""),
+  thirdImageUrl: String(thirdImageUrl || ""),
+  fourthImageUrl: String(fourthImageUrl || ""),
+  fifthImageUrl: String(fifthImageUrl || ""),
+  sixthImageUrl: String(sixthImageUrl || ""),
+  seventhImageUrl: String(seventhImageUrl || ""),
+  eightImageUrl: String(eightImageUrl || ""),
+
+  formSections,
+  formSectionsWithCommission,
+});
+
 
     await accommodation.save();
 
@@ -1063,7 +1247,8 @@ export const getAccommodations = async (req, res) => {
       .skip(skip)
       .limit(limit);
 
-    const totalPages = Math.ceil(total / limit);
+    // const totalPages = Math.ceil(total / limit);
+    const totalPages = Math.max(1, Math.ceil(total / limit));
 
     res.status(200).json({ data: accommodations, totalPages });
   } catch (err) {
@@ -1086,7 +1271,18 @@ export const updateAccommodation = async (req, res) => {
 
     const companyId = purchaser.company;
 
-    const { formSections, ...rest } = req.body;
+    const {
+  formSections,
+  imageUrl = "",
+  secondImageUrl = "",
+  thirdImageUrl = "",
+  fourthImageUrl = "",
+  fifthImageUrl = "",
+  sixthImageUrl = "",
+  seventhImageUrl = "",
+  eightImageUrl = "",
+  ...rest
+} = req.body;
 
     const formSectionsWithCommission = formSections.map((section) => {
       const commission = Number(section.commission) || 0;
@@ -1109,13 +1305,23 @@ export const updateAccommodation = async (req, res) => {
       return inflatedSection;
     });
 
-    const updatedData = {
-      ...rest,
-      formSections,
-      formSectionsWithCommission,
-      purchaserId,
-      companyId,
-    };
+   const updatedData = {
+  ...rest,
+  purchaserId,
+  companyId,
+
+  imageUrl: String(imageUrl || ""),
+  secondImageUrl: String(secondImageUrl || ""),
+  thirdImageUrl: String(thirdImageUrl || ""),
+  fourthImageUrl: String(fourthImageUrl || ""),
+  fifthImageUrl: String(fifthImageUrl || ""),
+  sixthImageUrl: String(sixthImageUrl || ""),
+  seventhImageUrl: String(seventhImageUrl || ""),
+  eightImageUrl: String(eightImageUrl || ""),
+
+  formSections,
+  formSectionsWithCommission,
+};
 
     const updatedAccommodation = await Accommodation.findByIdAndUpdate(
       accommodationId,
@@ -1136,6 +1342,41 @@ export const updateAccommodation = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+export const updateAccommodationStatus = async (req, res) => {
+  try {
+    const purchaserId = req.userId;
+    const purchaser = await Purchaser.findById(purchaserId);
+    if (!purchaser) {
+      return res
+        .status(404)
+        .json({ message: "Unauthorized: Purchaser not found or inactive." });
+    }
+
+    const { id } = req.params;
+    const { status } = req.body; // "Active" | "Inactive"
+
+    if (status !== "Active" && status !== "Inactive") {
+      return res.status(400).json({ success: false, message: "Invalid status value" });
+    }
+
+    const updated = await Accommodation.findOneAndUpdate(
+      { _id: id, purchaserId },
+      { $set: { status } },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ success: false, message: "Accommodation not found" });
+    }
+
+    res.json({ success: true, message: "Status updated", data: updated });
+  } catch (error) {
+    console.error("Status update failed", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 
 // export const getVehiclesForTrip = async (req, res) => {
 //   try {
@@ -1301,7 +1542,14 @@ export const createTrip = async (req, res) => {
       tripName: formData.tripName,
       description: formData.description,
       approxKm: formData.approxKm,
-      imageUrl: formData.imageUrl,
+       imageUrl: formData.imageUrl || "",
+      secondImageUrl: formData.secondImageUrl || "",
+      thirdImageUrl: formData.thirdImageUrl || "",
+       fourthImageUrl: formData.fourthImageUrl || "",
+      fifthImageUrl: formData.fifthImageUrl || "",
+      sixthImageUrl: formData.sixthImageUrl || "",
+      seventhImageUrl: formData.seventhImageUrl || "",
+      eightImageUrl: formData.eightImageUrl || "",
       vehicles: vehicleBlocks,
     });
 
@@ -1346,7 +1594,8 @@ export const getTrips = async (req, res) => {
 
     res.status(200).json({
       trips,
-      totalPages: Math.ceil(total / limit),
+      // totalPages: Math.ceil(total / limit),
+      totalPages: Math.max(1, Math.ceil(total / limit)),
     });
   } catch (err) {
     console.error("Error fetching trips:", err);
@@ -1417,7 +1666,14 @@ export const updateTrip = async (req, res) => {
         tripName: formData.tripName,
         description: formData.description,
         approxKm: formData.approxKm,
-        imageUrl: formData.imageUrl,
+         imageUrl: formData.imageUrl || "",
+        secondImageUrl: formData.secondImageUrl || "",
+        thirdImageUrl: formData.thirdImageUrl || "",
+        fourthImageUrl: formData.fourthImageUrl || "",
+        fifthImageUrl: formData.fifthImageUrl || "",
+        sixthImageUrl: formData.sixthImageUrl || "",
+        seventhImageUrl: formData.seventhImageUrl || "",
+        eightImageUrl: formData.eightImageUrl || "",
         vehicles: updatedVehicleBlocks,
       },
       { new: true }
@@ -1667,7 +1923,15 @@ export const createActivity = async (req, res) => {
       activityName,
       description,
       prices,
+      advancePercentage,
       imageUrl,
+      secondImageUrl,
+      thirdImageUrl,
+      fourthImageUrl,
+      fifthImageUrl,
+      sixthImageUrl,
+      seventhImageUrl,
+      eightImageUrl,
     } = req.body;
 
     const activity = new Activity({
@@ -1679,7 +1943,15 @@ export const createActivity = async (req, res) => {
       activityName,
       description,
       prices,
-      imageUrl,
+      advancePercentage,
+      imageUrl: imageUrl || "",
+      secondImageUrl: secondImageUrl || "",
+      thirdImageUrl: thirdImageUrl || "",
+      fourthImageUrl: fourthImageUrl || "",
+      fifthImageUrl: fifthImageUrl || "",
+      sixthImageUrl: sixthImageUrl || "",
+      seventhImageUrl: seventhImageUrl || "",
+      eightImageUrl: eightImageUrl || "",
       purchaser: purchaserId,
       company: purchaser.company,
     });
@@ -1711,7 +1983,7 @@ export const getActivities = async (req, res) => {
     };
 
     const totalActivities = await Activity.countDocuments(query);
-    const totalPages = Math.ceil(totalActivities / limit);
+    const totalPages =  Math.max(1,Math.ceil (totalActivities / limit));
     const activities = await Activity.find(query)
       .populate("trip", "tripName")
       .populate("vendor", "name")
@@ -1758,7 +2030,15 @@ export const updateActivity = async (req, res) => {
       activityName,
       description,
       prices,
+      advancePercentage,
       imageUrl,
+      secondImageUrl,
+      thirdImageUrl,
+      fourthImageUrl,
+      fifthImageUrl,
+      sixthImageUrl,
+      seventhImageUrl,
+      eightImageUrl,
     } = req.body;
 
     activity.country = country;
@@ -1769,9 +2049,15 @@ export const updateActivity = async (req, res) => {
     activity.activityName = activityName;
     activity.description = description;
     activity.prices = prices;
-    if (typeof imageUrl !== "undefined") {
-      activity.imageUrl = imageUrl; // allow update OR clear
-    }
+    activity.advancePercentage = advancePercentage;
+    if (typeof imageUrl !== "undefined") activity.imageUrl = imageUrl;
+    if (typeof secondImageUrl !== "undefined") activity.secondImageUrl = secondImageUrl;
+    if (typeof thirdImageUrl !== "undefined") activity.thirdImageUrl = thirdImageUrl;
+    if (typeof fourthImageUrl !== "undefined") activity.fourthImageUrl = fourthImageUrl;
+    if (typeof fifthImageUrl !== "undefined") activity.fifthImageUrl = fifthImageUrl;
+    if (typeof sixthImageUrl !== "undefined") activity.sixthImageUrl = sixthImageUrl;
+    if (typeof seventhImageUrl !== "undefined") activity.seventhImageUrl = seventhImageUrl;
+    if (typeof eightImageUrl !== "undefined") activity.eightImageUrl = eightImageUrl;
 
     await activity.save();
 
@@ -1873,7 +2159,14 @@ export const createAddOnTrip = async (req, res) => {
       addontripName: formData.addontripName,
       description: formData.description,
       approxKm: formData.approxKm,
-      imageUrl: formData.imageUrl,
+      imageUrl: formData.imageUrl || "",
+      secondImageUrl: formData.secondImageUrl || "",
+      thirdImageUrl: formData.thirdImageUrl || "",
+      fourthImageUrl: formData.fourthImageUrl || "",
+      fifthImageUrl: formData.fifthImageUrl || "",
+      sixthImageUrl: formData.sixthImageUrl || "",
+      seventhImageUrl: formData.seventhImageUrl || "",
+      eighthImageUrl: formData.eighthImageUrl || "",
       vehicles: vehicleBlocks,
     });
 
@@ -1918,7 +2211,8 @@ export const getAddOnTrips = async (req, res) => {
 
     res.status(200).json({
       trips,
-      totalPages: Math.ceil(total / limit),
+      // totalPages: Math.ceil(total / limit),
+      totalPages: Math.max(1, Math.ceil(total / limit)),
     });
   } catch (err) {
     console.error("Error fetching trips:", err);
@@ -1987,7 +2281,14 @@ export const updateAddOnTrip = async (req, res) => {
         addontripName: formData.addontripName,
         description: formData.description,
         approxKm: formData.approxKm,
-        imageUrl: formData.imageUrl,
+          imageUrl: formData.imageUrl || "",
+        secondImageUrl: formData.secondImageUrl || "",
+        thirdImageUrl: formData.thirdImageUrl || "",
+        fourthImageUrl: formData.fourthImageUrl || "",
+        fifthImageUrl: formData.fifthImageUrl || "",
+        sixthImageUrl: formData.sixthImageUrl || "",
+        seventhImageUrl: formData.seventhImageUrl || "",
+        eighthImageUrl: formData.eighthImageUrl || "",
         vehicles: updatedVehicleBlocks,
       },
       { new: true } // Return updated document
@@ -2351,6 +2652,100 @@ export const getGroupTourById = async (req, res) => {
  *   accLines:      { "i-j": [ ... ] }
  * }
  */
+// export const saveGroupTourBO = async (req, res) => {
+//   try {
+//     const purchaserId = req.userId;
+//     const tourId = req.params.id;
+
+//     const purchaser = await Purchaser.findById(purchaserId);
+//     if (!purchaser) {
+//       return res
+//         .status(404)
+//         .json({ message: "Unauthorized: Purchaser not found or inactive." });
+//     }
+
+//     const tour = await GroupTour.findOne({
+//       _id: tourId,
+//       purchaser: purchaserId,
+//     });
+//     if (!tour) return res.status(404).json({ message: "Tour not found" });
+
+//     const {
+//       vehLines = {},
+//       addonVehLines = {},
+//       foodLines = {},
+//       actLines = {},
+//       accLines = {},
+//       totalBO,
+//       totalItinerary,
+//     } = req.body || {};
+
+//     // Walk days/segments; segKey = `${i}-${j}`
+//     (tour.days || []).forEach((day, i) => {
+//       (day.segments || []).forEach((seg, j) => {
+//         const key = `${i}-${j}`;
+
+//         const normalize = (arr) =>
+//           (arr || []).map((x) => ({ ...x, date: toDateOrNull(x?.date) }));
+
+//         seg.boTripVehicles = normalize(vehLines[key]);
+//         seg.boAddonVehicles = normalize(addonVehLines[key]);
+//         seg.boFoods = normalize(foodLines[key]);
+//         seg.boActivities = normalize(actLines[key]);
+//         seg.boAccommodations = normalize(accLines[key]);
+//       });
+//     });
+//     /** 🔽 NEW: use totals to update tour fields */
+//     const safeTotalBO = Number(totalBO || 0);
+//     const safeTotalItinerary = Number(totalItinerary || 0);
+//     const totalPax = Number(tour.totalPax || 0);
+
+//     // netCost = total BO
+//     tour.netCost = safeTotalBO;
+
+//     // pricePerPax = ceil(totalItinerary / totalPax) (if pax > 0)
+//     if (totalPax > 0 && safeTotalItinerary > 0) {
+//       tour.pricePerPax = Math.ceil(safeTotalItinerary / totalPax);
+//     } else {
+//       tour.pricePerPax = 0; // or keep previous value if you prefer
+//     }
+
+//     // activate the tour
+//     tour.activeStatus = true;
+
+//     await tour.save();
+
+//     const fresh = await GroupTour.findById(tourId)
+//       .populate("country", "name")
+//       .populate("state", "name")
+//       .populate("destination", "name")
+//       .populate({ path: "days.segments.country", select: "name" })
+//       .populate({ path: "days.segments.state", select: "name" })
+//       .populate({ path: "days.segments.destination", select: "name" })
+//       .populate({
+//         path: "days.segments.trip",
+//         select: "tripName duration price",
+//       })
+//       .populate({
+//         path: "days.segments.selectedAddon",
+//         select: "addontripName price",
+//       })
+//       .populate({
+//         path: "days.segments.selectedActivities",
+//         select: "activityName price",
+//       })
+//       .lean();
+
+//     return res
+//       .status(200)
+//       .json({ message: "Booking order saved", tour: fresh });
+//   } catch (err) {
+//     console.error("saveGroupTourBO error:", err);
+//     return res.status(500).json({ message: "Failed to save booking order" });
+//   }
+// };
+;
+
 export const saveGroupTourBO = async (req, res) => {
   try {
     const purchaserId = req.userId;
@@ -2377,40 +2772,184 @@ export const saveGroupTourBO = async (req, res) => {
       accLines = {},
       totalBO,
       totalItinerary,
+      totalAdvance,
     } = req.body || {};
 
-    // Walk days/segments; segKey = `${i}-${j}`
-    (tour.days || []).forEach((day, i) => {
-      (day.segments || []).forEach((seg, j) => {
-        const key = `${i}-${j}`;
+    // ---- walk days/segments and map bo lines with vendor info ----
+    if (Array.isArray(tour.days)) {
+      for (let i = 0; i < tour.days.length; i++) {
+        const day = tour.days[i];
+        if (!Array.isArray(day.segments)) continue;
 
-        const normalize = (arr) =>
-          (arr || []).map((x) => ({ ...x, date: toDateOrNull(x?.date) }));
+        for (let j = 0; j < day.segments.length; j++) {
+          const seg = day.segments[j];
+          const key = `${i}-${j}`;
 
-        seg.boTripVehicles = normalize(vehLines[key]);
-        seg.boAddonVehicles = normalize(addonVehLines[key]);
-        seg.boFoods = normalize(foodLines[key]);
-        seg.boActivities = normalize(actLines[key]);
-        seg.boAccommodations = normalize(accLines[key]);
-      });
-    });
-    /** 🔽 NEW: use totals to update tour fields */
+          /* ---------- Trip Vehicles ---------- */
+          {
+            const raw = vehLines[key] || [];
+            const norm = [];
+            for (const x of raw) {
+              const base = {
+                ...x,
+                date: toDateOrNull(x?.date),
+              };
+
+              if (x?.vehicleId) {
+                const v = await Vehicle.findById(x.vehicleId).populate(
+                  "vendor",
+                  "name"
+                );
+                if (v) {
+    base.vehicleName = v.vehicle; // ✅ NEW
+  }
+                if (v?.vendor) {
+                  base.vendorId = v.vendor._id;
+                  base.vendorName = v.vendor.name;
+                }
+              }
+
+              norm.push(base);
+            }
+            seg.boTripVehicles = norm;
+          }
+
+          /* ---------- Add-on Vehicles ---------- */
+          {
+            const raw = addonVehLines[key] || [];
+            const norm = [];
+            for (const x of raw) {
+              const base = {
+                ...x,
+                date: toDateOrNull(x?.date),
+              };
+
+              if (x?.vehicleId) {
+                const v = await Vehicle.findById(x.vehicleId).populate(
+                  "vendor",
+                  "name"
+                );
+                if (v) {
+    base.vehicleName = v.vehicle; // ✅ NEW
+  }
+                if (v?.vendor) {
+                  base.vendorId = v.vendor._id;
+                  base.vendorName = v.vendor.name;
+                }
+              }
+
+              norm.push(base);
+            }
+            seg.boAddonVehicles = norm;
+          }
+
+          /* ---------- Foods ---------- */
+          {
+            const raw = foodLines[key] || [];
+            const norm = [];
+            for (const x of raw) {
+              const base = {
+                ...x,
+                date: toDateOrNull(x?.date),
+              };
+
+              if (x?.vendorId) {
+                const vend = await Vendor.findById(x.vendorId);
+                if (vend) {
+                  base.vendorName = vend.name;
+                }
+              }
+
+              norm.push(base);
+            }
+            seg.boFoods = norm;
+          }
+
+          /* ---------- Activities ---------- */
+          {
+            const raw = actLines[key] || [];
+            const norm = [];
+            for (const x of raw) {
+              const base = {
+                ...x,
+                date: toDateOrNull(x?.date),
+              };
+
+              if (x?.activityId) {
+                const act = await Activity.findById(x.activityId).populate(
+                  "vendor",
+                  "name"
+                );
+                if (act?.vendor) {
+                  base.vendorId = act.vendor._id;
+                  base.vendorName = act.vendor.name;
+                }
+              }
+
+              norm.push(base);
+            }
+            seg.boActivities = norm;
+          }
+
+          /* ---------- Accommodations ---------- */
+          {
+            const raw = accLines[key] || [];
+            const norm = [];
+            for (const x of raw) {
+              const base = {
+                ...x,
+                date: toDateOrNull(x?.date),
+              };
+
+              if (x?.accommodationId) {
+                const acc = await Accommodation.findById(
+                  x.accommodationId
+                ).populate("vendor", "name");
+                if (acc?.vendor) {
+                  base.vendorId = acc.vendor._id;
+                  base.vendorName = acc.vendor.name;
+                }
+              }
+
+              norm.push(base);
+            }
+            seg.boAccommodations = norm;
+          }
+        }
+      }
+    }
+
+    /** 🔽 use totals to update tour fields */
     const safeTotalBO = Number(totalBO || 0);
     const safeTotalItinerary = Number(totalItinerary || 0);
     const totalPax = Number(tour.totalPax || 0);
 
     // netCost = total BO
     tour.netCost = safeTotalBO;
+    // ✅ margin = totalItinerary - totalBO
+    tour.margin = Math.round(safeTotalItinerary - safeTotalBO);
 
     // pricePerPax = ceil(totalItinerary / totalPax) (if pax > 0)
     if (totalPax > 0 && safeTotalItinerary > 0) {
       tour.pricePerPax = Math.ceil(safeTotalItinerary / totalPax);
     } else {
-      tour.pricePerPax = 0; // or keep previous value if you prefer
+      tour.pricePerPax = 0;
     }
+    const safeTotalAdvance = Number(totalAdvance || 0);
+
+// ✅ store total advance
+tour.totalAdvance = safeTotalAdvance;
+
+// ✅ advance per pax
+if (totalPax > 0 && safeTotalAdvance > 0) {
+  tour.advancePerPax = Math.ceil(safeTotalAdvance / totalPax);
+} else {
+  tour.advancePerPax = 0;
+}
 
     // activate the tour
     tour.activeStatus = true;
+    tour.boCreatedStatus = true;
 
     await tour.save();
 
@@ -2443,6 +2982,39 @@ export const saveGroupTourBO = async (req, res) => {
     return res.status(500).json({ message: "Failed to save booking order" });
   }
 };
+
+
+export const deleteGroupTour = async (req, res) => {
+  try {
+    const purchaserId = req.userId;
+    const tourId = req.params.id;
+
+    const purchaser = await Purchaser.findById(purchaserId);
+    if (!purchaser) {
+      return res
+        .status(404)
+        .json({ message: "Unauthorized: Purchaser not found or inactive." });
+    }
+
+    // ensure the tour belongs to this purchaser
+    const tour = await GroupTour.findOne({
+      _id: tourId,
+      purchaser: purchaserId,
+    });
+
+    if (!tour) {
+      return res.status(404).json({ message: "Tour not found" });
+    }
+
+    await GroupTour.deleteOne({ _id: tourId });
+
+    return res.status(200).json({ message: "Group tour deleted successfully" });
+  } catch (err) {
+    console.error("deleteGroupTour error:", err);
+    return res.status(500).json({ message: "Failed to delete group tour" });
+  }
+};
+
 // UPDATE
 export const updateGroupTour = async (req, res) => {
   try {
@@ -2546,6 +3118,44 @@ export const updateGroupTour = async (req, res) => {
     res.status(500).json({ message: "Failed to update group tour" });
   }
 };
+export const updateGroupTourActiveStatus = async (req, res) => {
+  try {
+    const purchaserId = req.userId;
+    const tourId = req.params.id;
+
+    const purchaser = await Purchaser.findById(purchaserId);
+    if (!purchaser) {
+      return res.status(404).json({ message: "Unauthorized: Purchaser not found or inactive." });
+    }
+
+    const { activeStatus } = req.body || {};
+    const next = Boolean(activeStatus);
+
+    const tour = await GroupTour.findOneAndUpdate(
+      { _id: tourId, purchaser: purchaserId },
+      { $set: { activeStatus: next } },
+      { new: true }
+    )
+      .populate("country", "name")
+      .populate("state", "name")
+      .populate("destination", "name")
+      .populate({ path: "days.segments.country", select: "name" })
+      .populate({ path: "days.segments.state", select: "name" })
+      .populate({ path: "days.segments.destination", select: "name" })
+      .populate({ path: "days.segments.trip", select: "tripName duration price" })
+      .populate({ path: "days.segments.selectedAddon", select: "addontripName price" })
+      .populate({ path: "days.segments.selectedActivities", select: "activityName price" })
+      .lean();
+
+    if (!tour) return res.status(404).json({ message: "Tour not found" });
+
+    return res.status(200).json({ message: "Status updated", tour });
+  } catch (err) {
+    console.error("updateGroupTourActiveStatus error:", err);
+    return res.status(500).json({ message: "Failed to update active status" });
+  }
+};
+
 const normalizeStart = (d) => new Date(new Date(d).setHours(0, 0, 0, 0));
 const normalizeEnd = (d) => new Date(new Date(d).setHours(23, 59, 59, 999));
 const inRange = (d, from, to) =>
@@ -2656,7 +3266,7 @@ export const getTripVehiclesForDate = async (req, res) => {
     const trip = await Trip.findOne({ _id: tripId, purchaser: purchaserId })
       .populate({
         path: "vehicles.vehicle",
-        select: "vehicle percentage activeStatus", // ✅ include activeStatus
+        select: "vehicle percentage activeStatus advancePercentage", // ✅ include activeStatus
       })
       .populate({
         path: "vehicles.vendor",
@@ -2690,7 +3300,11 @@ export const getTripVehiclesForDate = async (req, res) => {
         vehicleId: vehDoc?._id,
         vehicleName: vehDoc?.vehicle,
         percentage: Number(vehDoc?.percentage ?? 0),
+        advancePercentage: Number(vehDoc?.advancePercentage ?? 0),
         basePrice: Number(match.price),
+         advanceUnit: Math.round(
+    Number(match.price) * Number(vehDoc?.advancePercentage || 0) / 100
+  ),
         vendor: vendorDoc?._id || null, // ✅ id of active vendor
       };
 
@@ -2879,6 +3493,10 @@ export const getTripFoodsForDate = async (req, res) => {
         price: Number(match.price || 0),
         percent: Number(match.percent || 0),
         itineraryPrice: Number(match.itineraryPrice || 0),
+         advancePercentage: Number(row.advancePercentage || 0),
+  advanceUnit: Math.round(
+    Number(match.price || 0) * Number(row.advancePercentage || 0) / 100
+  ),
         vendor: vendorDoc?._id || null, // ✅ only active vendor id
         vendorName: vendorDoc?.name || "", // ✅ for UI
       };
@@ -3010,7 +3628,7 @@ export const getAddonTripVehiclesForDate = async (req, res) => {
     })
       .populate({
         path: "vehicles.vehicle",
-        select: "vehicle percentage activeStatus", // ✅ include activeStatus
+        select: "vehicle percentage activeStatus advancePercentage", // ✅ include activeStatus
       })
       .populate({
         path: "vehicles.vendor",
@@ -3044,7 +3662,11 @@ export const getAddonTripVehiclesForDate = async (req, res) => {
         vehicleId: vehDoc?._id,
         vehicleName: vehDoc?.vehicle,
         percentage: Number(vehDoc?.percentage ?? 0),
+        advancePercentage: Number(vehDoc?.advancePercentage ?? 0),
         basePrice: Number(matched.price),
+         advanceUnit: Math.round(
+    Number(matched.price) * Number(vehDoc?.advancePercentage || 0) / 100
+  ),
         vendor: vendorDoc?._id || null, // ✅ only active vendor id
       };
 
@@ -3126,6 +3748,10 @@ export const getActivitiesPricingForDate = async (req, res) => {
         price: base,
         percentage: perc,
         itineraryPrice: itin,
+         advancePercentage: Number(a.advancePercentage || 0),
+  advanceUnit: Math.round(
+    base * Number(a.advancePercentage || 0) / 100
+  ),
         vendorId: a.vendor?._id || null,
         vendorName: a.vendor?.name || "",
       });
@@ -3334,6 +3960,7 @@ export const getAccommodationsPricingForDate = async (req, res) => {
         vendorId: vendorDoc?._id || null, // ✅ only active vendor id
         vendorName: vendorDoc?.name || "",
         commission: Number(baseSection.commission || 0),
+        advancePercentage: Number(a.advancePercentage || 0),
         roomTypes,
       });
     }
@@ -3350,15 +3977,241 @@ export const getAccommodationsPricingForDate = async (req, res) => {
       .json({ message: "Server error while fetching accommodations pricing." });
   }
 };
+export const getVendorsByDestinationForFixedTour = async (req, res) => {
+  try {
+    const purchaserId = req.userId;
+    const purchaser = await Purchaser.findById(purchaserId);
+    if (!purchaser) {
+      return res.status(404).json({ message: "Unauthorized: Purchaser not found" });
+    }
 
+    const { destinationId } = req.params;
+
+    const vendors = await Vendor.find({
+      company: purchaser.company,
+      destination: destinationId,
+      activeStatus: true,
+      services: "Fixed Tour",
+    })
+      .select("_id name vendorCode")
+      .sort({ name: 1 })
+      .lean();
+
+    return res.status(200).json({ vendors });
+  } catch (err) {
+    console.error("getVendorsByDestinationForFixedTour error:", err);
+    return res.status(500).json({ message: "Failed to fetch vendors" });
+  }
+};
+export const getAccommodationsByFilter = async (req, res) => {
+  console.log("haiiiiii")
+  try {
+    const purchaserId = req.userId;
+    const purchaser = await Purchaser.findById(purchaserId);
+    if (!purchaser) {
+      return res.status(404).json({ message: "Unauthorized: Purchaser not found or inactive." });
+    }
+
+    const { destinationId } = req.params;
+    let { hotelCategory, roomCategory, currentAccommodationId } = req.query;
+
+    // normalize weird query values
+    if (
+      currentAccommodationId === "undefined" ||
+      currentAccommodationId === "null" ||
+      currentAccommodationId === ""
+    ) {
+      currentAccommodationId = undefined;
+    }
+
+    const companyId = purchaser.company;
+
+    // base query
+    const baseQuery = {
+      purchaserId,     // matches your Accommodation schema field
+      companyId,
+      destination: destinationId,
+    };
+
+    // optional filters
+    if (hotelCategory) baseQuery.hotelCategory = hotelCategory;
+    if (roomCategory) baseQuery.roomCategory = roomCategory;
+    console.log(baseQuery,"basequery")
+    // NOTE: you have `status` field in accommodation. If you store "Active", filter here.
+    // If not sure, keep it relaxed.
+    // baseQuery.status = "Active";
+
+    // 1) find accommodations matching filters
+    let accommodations = await Accommodation.find(baseQuery)
+      .select("_id propertyName hotelCategory roomCategory destination status")
+      .sort({ propertyName: 1 })
+      .lean();
+   console.log(accommodations,"accommodationssssss")
+    // 2) if editing and current is not in list, include it
+    if (currentAccommodationId) {
+      const exists = accommodations.some((a) => a._id.toString() === currentAccommodationId.toString());
+      if (!exists) {
+        const currentAcc = await Accommodation.findOne({
+          _id: currentAccommodationId,
+          purchaserId,
+          companyId,
+          destination: destinationId,
+        })
+          .select("_id propertyName hotelCategory roomCategory destination status")
+          .lean();
+
+        if (currentAcc) accommodations.push(currentAcc);
+      }
+    }
+
+    return res.status(200).json({ accommodations });
+  } catch (err) {
+    console.error("getAccommodationsByFilter error:", err);
+    return res.status(500).json({ message: "Failed to fetch accommodations" });
+  }
+};
+
+// export const createFixedTour = async (req, res) => {
+//   try {
+//     const purchaserId = req.userId;
+//     const purchaser = await Purchaser.findById(purchaserId);
+//     if (!purchaser)
+//       return res.status(404).json({ message: "Purchaser not found" });
+
+//     const company = purchaser.company;
+//     const {
+//       country,
+//       state,
+//       destination,
+//       tourName,
+//       category,
+//       pickupPoint,
+//       dropOffPoint,
+//       totalDays,
+//       totalNights,
+//       validFrom,
+//       validTill,
+//       paxPrices,
+//       includes,
+//       excludes,
+//       days,
+//     } = req.body;
+
+//     if (!Array.isArray(days)) {
+//       return res.status(400).json({ message: "Invalid itinerary days format" });
+//     }
+
+//     const fromDate = new Date(validFrom);
+//     const tillDate = new Date(validTill);
+//     if (isNaN(fromDate) || isNaN(tillDate)) {
+//       return res.status(400).json({ message: "Invalid date range" });
+//     }
+
+//     // Validate each day has segments array
+//     for (let i = 0; i < days.length; i++) {
+//       if (!Array.isArray(days[i].segments) || days[i].segments.length === 0) {
+//         return res
+//           .status(400)
+//           .json({ message: `Day ${i + 1} requires at least one segment` });
+//       }
+//     }
+
+//     // const formattedDays = days.map((day, idx) => ({
+//     //   dayLabel: `Day ${idx + 1}`,
+//     //   segments: day.segments.map((s) => ({
+//     //     country: s.country || undefined,
+//     //     state: s.state || undefined,
+//     //     destination: s.destination || undefined,
+//     //     trip: s.trip || undefined,
+//     //     selectedAddon: s.selectedAddon || undefined,
+//     //     selectedActivities: Array.isArray(s.selectedActivities)
+//     //       ? s.selectedActivities.filter(Boolean)
+//     //       : [],
+//     //   })),
+//     // }));
+//     const formattedDays = days.map((day, idx) => ({
+//   dayLabel: `Day ${idx + 1}`,
+//   segments: day.segments.map((s) => ({
+//     country: s.country || undefined,
+//     state: s.state || undefined,
+//     destination: s.destination || undefined,
+//     trip: s.trip || undefined,
+//     selectedAddon: s.selectedAddon || undefined,
+
+//     selectedActivities: Array.isArray(s.selectedActivities)
+//       ? s.selectedActivities.filter(Boolean)
+//       : [],
+
+//     // NEW fields
+//     tripVehicleCategory: s.tripVehicleCategory || undefined,
+//     addonTripVehicleCategory: s.addonTripVehicleCategory || undefined,
+//     hotelCategory: s.hotelCategory || undefined,
+//     roomCategory: s.roomCategory || undefined,
+
+//     meals: Array.isArray(s.meals)
+//       ? s.meals
+//           .filter(
+//             (m) =>
+//               m &&
+//               (m.mealCategory ||
+//                 m.mealType ||
+//                 (typeof m.mealName === "string" && m.mealName.trim()))
+//           )
+//           .map((m) => ({
+//             mealCategory: m.mealCategory || undefined,
+//             mealType: m.mealType || undefined,
+//             mealName: typeof m.mealName === "string" ? m.mealName.trim() : undefined,
+//           }))
+//       : [],
+//   })),
+// }));
+
+//     const counter = await Counter.findOneAndUpdate(
+//       { company },
+//       { $inc: { TourSequence: 1 } },
+//       { new: true, upsert: true }
+//     );
+//     const articleNumber = buildArticleNumber(tourName, counter.TourSequence);
+
+//     const newTour = new FixedTour({
+//       purchaser: purchaserId,
+//       company,
+//       country,
+//       state,
+//       destination,
+//       tourName,
+//       articleNumber,
+//       category,
+//       pickupPoint,
+//       dropOffPoint,
+//       totalDays,
+//       totalNights,
+//       validFrom: fromDate,
+//       validTill: tillDate,
+//       paxPrices,
+//       includes,
+//       excludes,
+//       days: formattedDays,
+//     });
+
+//     await newTour.save();
+//     return res.status(201).json({
+//       message: "Fixed Tour created successfully",
+//       tourId: newTour._id,
+//     });
+//   } catch (err) {
+//     console.error("Fixed tour creation error:", err);
+//     return res.status(500).json({ message: "Failed to create fixed tour" });
+//   }
+// };
 export const createFixedTour = async (req, res) => {
   try {
     const purchaserId = req.userId;
     const purchaser = await Purchaser.findById(purchaserId);
-    if (!purchaser)
-      return res.status(404).json({ message: "Purchaser not found" });
+    if (!purchaser) return res.status(404).json({ message: "Purchaser not found" });
 
     const company = purchaser.company;
+
     const {
       country,
       state,
@@ -3375,7 +4228,16 @@ export const createFixedTour = async (req, res) => {
       includes,
       excludes,
       days,
+
+      // ✅ NEW (for vendor & commission)
+      vendorId,
+      commissionPercentage,
+       advancePercentage,
     } = req.body;
+
+    // ---------- basic validations ----------
+    if (!destination) return res.status(400).json({ message: "Destination is required" });
+    if (!tourName) return res.status(400).json({ message: "Tour Name is required" });
 
     if (!Array.isArray(days)) {
       return res.status(400).json({ message: "Invalid itinerary days format" });
@@ -3385,6 +4247,9 @@ export const createFixedTour = async (req, res) => {
     const tillDate = new Date(validTill);
     if (isNaN(fromDate) || isNaN(tillDate)) {
       return res.status(400).json({ message: "Invalid date range" });
+    }
+    if (!(fromDate < tillDate)) {
+      return res.status(400).json({ message: "Valid From must be earlier than Valid Till" });
     }
 
     // Validate each day has segments array
@@ -3396,6 +4261,36 @@ export const createFixedTour = async (req, res) => {
       }
     }
 
+    // ---------- ✅ NEW: vendor validations ----------
+    if (!vendorId) {
+      return res.status(400).json({ message: "Vendor is required" });
+    }
+    // validate advance%
+const adv = Number(advancePercentage ?? 0);
+if (Number.isNaN(adv) || adv < 0 || adv > 100) {
+  return res.status(400).json({ message: "Advance Percentage must be between 0 and 100" });
+}
+    const commission = Number(commissionPercentage ?? 0);
+    if (Number.isNaN(commission) || commission < 0 || commission > 100) {
+      return res.status(400).json({ message: "Commission must be between 0 and 100" });
+    }
+
+    // Vendor must be active + same destination + has "Fixed Tour" service
+    const vendor = await Vendor.findOne({
+      _id: vendorId,
+      company,
+      destination,
+      activeStatus: true,
+      services: "Fixed Tour",
+    }).select("_id name vendorCode");
+
+    if (!vendor) {
+      return res.status(400).json({
+        message: "Selected vendor is not valid for this destination / not active / not Fixed Tour service",
+      });
+    }
+
+    // ---------- format day segments (same as your existing, with your NEW fields) ----------
     const formattedDays = days.map((day, idx) => ({
       dayLabel: `Day ${idx + 1}`,
       segments: day.segments.map((s) => ({
@@ -3404,11 +4299,60 @@ export const createFixedTour = async (req, res) => {
         destination: s.destination || undefined,
         trip: s.trip || undefined,
         selectedAddon: s.selectedAddon || undefined,
+
         selectedActivities: Array.isArray(s.selectedActivities)
           ? s.selectedActivities.filter(Boolean)
           : [],
+
+        // NEW fields
+        tripVehicleCategory: s.tripVehicleCategory || undefined,
+        addonTripVehicleCategory: s.addonTripVehicleCategory || undefined,
+        hotelCategory: s.hotelCategory || undefined,
+        roomCategory: s.roomCategory || undefined,
+         accommodation: s.accommodation || undefined, 
+    roomType: s.roomType || undefined,   
+
+        meals: Array.isArray(s.meals)
+          ? s.meals
+              .filter(
+                (m) =>
+                  m &&
+                  (m.mealCategory ||
+                    m.mealType ||
+                    (typeof m.mealName === "string" && m.mealName.trim()))
+              )
+              .map((m) => ({
+                mealCategory: m.mealCategory || undefined,
+                mealType: m.mealType || undefined,
+                mealName: typeof m.mealName === "string" ? m.mealName.trim() : undefined,
+              }))
+          : [],
       })),
     }));
+
+    // ---------- ✅ NEW: auto-generate itineraryPrices from paxPrices + commission ----------
+    const itineraryPrices = {};
+    for (let i = 1; i <= 18; i++) {
+      const base = Number(paxPrices?.[i] ?? paxPrices?.[String(i)] ?? 0);
+      if (!base || base <= 0) {
+        itineraryPrices[i] = undefined;
+      } else {
+        const net = base + (base * commission) / 100;
+        itineraryPrices[i] = Math.round(net)
+      }
+    }
+    const advancePrices = {};
+for (let i = 1; i <= 18; i++) {
+  const base = Number(paxPrices?.[i] ?? paxPrices?.[String(i)] ?? 0);
+  if (!base || base <= 0) {
+    advancePrices[i] = undefined;
+  } else {
+    const advAmt = (base * adv) / 100;
+    advancePrices[i] = Math.round(advAmt);
+  }
+}
+
+    // ---------- article number ----------
     const counter = await Counter.findOneAndUpdate(
       { company },
       { $inc: { TourSequence: 1 } },
@@ -3416,6 +4360,7 @@ export const createFixedTour = async (req, res) => {
     );
     const articleNumber = buildArticleNumber(tourName, counter.TourSequence);
 
+    // ---------- save ----------
     const newTour = new FixedTour({
       purchaser: purchaserId,
       company,
@@ -3435,9 +4380,21 @@ export const createFixedTour = async (req, res) => {
       includes,
       excludes,
       days: formattedDays,
+
+      // ✅ NEW fields saved
+      vendor: {
+        vendorId: vendor._id,
+        vendorName: vendor.name,
+        vendorCode: vendor.vendorCode,
+      },
+      commissionPercentage: commission,
+      itineraryPrices,
+      advancePercentage: adv,
+  advancePrices,
     });
 
     await newTour.save();
+
     return res.status(201).json({
       message: "Fixed Tour created successfully",
       tourId: newTour._id,
@@ -3447,7 +4404,6 @@ export const createFixedTour = async (req, res) => {
     return res.status(500).json({ message: "Failed to create fixed tour" });
   }
 };
-
 // LIST
 export const getFixedTours = async (req, res) => {
   try {
@@ -3479,7 +4435,106 @@ export const getFixedTours = async (req, res) => {
     res.status(500).json({ error: "Server error while fetching fixed tours." });
   }
 };
+// export const getFixedTourById = async (req, res) => {
+//   try {
+//     const purchaserId = req.userId;
+//     const { id } = req.params;
 
+//     // Ensure purchaser exists
+//     const purchaser = await Purchaser.findById(purchaserId);
+//     if (!purchaser) {
+//       return res.status(404).json({ message: "Purchaser not found" });
+//     }
+
+//     // Fetch fixed tour
+//     const tour = await FixedTour.findOne({
+//       _id: id,
+//       purchaser: purchaserId,
+//     })
+//       // 🔥 Populate for modal display (VERY IMPORTANT)
+//       .populate("country", "name")
+//       .populate("state", "name")
+//       .populate("destination", "name")
+//       .populate({
+//         path: "days.segments.country",
+//         select: "name",
+//       })
+//       .populate({
+//         path: "days.segments.state",
+//         select: "name",
+//       })
+//       .populate({
+//         path: "days.segments.destination",
+//         select: "name",
+//       })
+//       .populate({
+//         path: "days.segments.trip",
+//         select: "tripName",
+//       })
+//       .populate({
+//         path: "days.segments.selectedAddon",
+//         select: "addontripName",
+//       })
+//       .populate({
+//         path: "days.segments.selectedActivities",
+//         select: "activityName",
+//       });
+
+//     if (!tour) {
+//       return res.status(404).json({ message: "Fixed tour not found" });
+//     }
+
+//     return res.status(200).json({
+//       message: "Fixed tour fetched successfully",
+//       tour,
+//     });
+//   } catch (err) {
+//     console.error("Error fetching fixed tour by id:", err);
+//     return res.status(500).json({ message: "Failed to fetch fixed tour" });
+//   }
+// };
+
+export const getFixedTourById = async (req, res) => {
+  try {
+    const purchaserId = req.userId;
+    const { id } = req.params;
+
+    const purchaser = await Purchaser.findById(purchaserId);
+    if (!purchaser) {
+      return res.status(404).json({ message: "Purchaser not found" });
+    }
+
+    const tour = await FixedTour.findOne({
+      _id: id,
+      purchaser: purchaserId,
+    })
+      .populate("country", "name")
+      .populate("state", "name")
+      .populate("destination", "name")
+      .populate({ path: "days.segments.country", select: "name" })
+      .populate({ path: "days.segments.state", select: "name" })
+      .populate({ path: "days.segments.destination", select: "name" })
+      .populate({ path: "days.segments.trip", select: "tripName" })
+      .populate({ path: "days.segments.selectedAddon", select: "addontripName" })
+      .populate({ path: "days.segments.selectedActivities", select: "activityName" })
+      .populate({ path: "days.segments.accommodation", select: "propertyName hotelCategory roomCategory" }) // ✅ NEW
+
+      // ✅ OPTIONAL (good): populate vendorId to confirm
+      .populate({ path: "vendor.vendorId", select: "name vendorCode" });
+
+    if (!tour) {
+      return res.status(404).json({ message: "Fixed tour not found" });
+    }
+
+    return res.status(200).json({
+      message: "Fixed tour fetched successfully",
+      tour,
+    });
+  } catch (err) {
+    console.error("Error fetching fixed tour by id:", err);
+    return res.status(500).json({ message: "Failed to fetch fixed tour" });
+  }
+};
 // UPDATE
 export const updateFixedTour = async (req, res) => {
   try {
@@ -3737,7 +4792,7 @@ export const getFoodTrips = async (req, res) => {
 
     // Count total documents matching the condition
     const totalDocs = await Food.countDocuments(matchStage);
-    const totalPages = Math.ceil(totalDocs / limit);
+    const totalPages =  Math.max(1,Math.ceil (totalDocs / limit));
 
     // Fetch paginated food documents
     const foodDocs = await Food.find(matchStage)

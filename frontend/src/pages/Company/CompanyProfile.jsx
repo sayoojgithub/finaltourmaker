@@ -138,6 +138,7 @@ import CreateAgent from "./CreateAgent";
 import CreateEmployee from "./CreateEmployee";
 import PincodeManagement from "./PincodeManagement";
 import PincodeManager from "./PincodeManager";
+import ExecutivePointManager from "./ExecutivePointManager";
 
 const tabData = [
   { label: "Profile" },
@@ -148,6 +149,7 @@ const tabData = [
   { label: "Create Agent"},
   { label: "Create Employee"},
   { label: "Pincode Management" },
+  { label: "Executive Percentage Management"}
 
 
 ];
@@ -221,6 +223,7 @@ export default function CompanyProfile() {
       case 6: return <CreateEmployee />;
       case 7: // 👇 NEW tab
         return <PincodeManagement onOpenTarget={(t) => setPincodeTarget(t)} />;
+      case 8: return <ExecutivePointManager/>
       default: return null;
     }
   };

@@ -1385,6 +1385,7 @@ export default function SalesClients({ category, onBack, onStatusChange }) {
 
       {/* Contact Flow Modal */}
       <ContactFlowModal
+        key={activeClient?._id || "no-client"}
         open={!!activeClient}
         onClose={() => setActiveClient(null)}
         client={activeClient}

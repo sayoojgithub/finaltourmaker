@@ -310,7 +310,30 @@ export default function TourPickerOverlay({
       ? "Choose a Group Tour"
       : "Choose a Tour";
 
+
   return (
+    <>
+     <style>{`
+      .tp-glass-scroll::-webkit-scrollbar { width: 10px; }
+      .tp-glass-scroll::-webkit-scrollbar-track {
+        background: rgba(255,255,255,0.35);
+        border-radius: 999px;
+        backdrop-filter: blur(14px);
+      }
+      .tp-glass-scroll::-webkit-scrollbar-thumb {
+        background: rgba(133,112,238,0.28);
+        border-radius: 999px;
+        border: 2px solid rgba(255,255,255,0.45);
+        backdrop-filter: blur(14px);
+      }
+      .tp-glass-scroll::-webkit-scrollbar-thumb:hover {
+        background: rgba(133,112,238,0.42);
+      }
+      .tp-glass-scroll {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(133,112,238,0.35) rgba(255,255,255,0.25);
+      }
+    `}</style>
     <AnimatePresence>
       <motion.div
         className="absolute inset-0 z-[90] flex items-center justify-center"
@@ -351,7 +374,7 @@ export default function TourPickerOverlay({
 
           {/* Content */}
           <div className="p-4 sm:p-6 flex-1 flex flex-col gap-4 bg-gradient-to-b from-white to-slate-50">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[360px] overflow-y-auto scroll-smooth pr-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[360px] overflow-y-auto scroll-smooth pr-1 tp-glass-scroll">
               {loading && (
                 <div className="text-xs text-slate-500">Loading tours...</div>
               )}
@@ -501,5 +524,6 @@ export default function TourPickerOverlay({
         </div>
       </motion.div>
     </AnimatePresence>
+    </>
   );
 }

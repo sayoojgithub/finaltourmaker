@@ -9,14 +9,31 @@ import {
   updateExecutiveNotAnsweredStatus,
   updateExecutiveNotReachableStatus,
   updateExecutiveNotInterestedStatus,
+  updateExecutiveInterestedStatus,
   getClientGroupTours,
+  getExecutiveGroupTourPreview,
+  getExecutiveGroupTourPointDiscountOptions,
   getClientFixedTours,
+  getExecutiveFixedTourPreview,
+  getFixedTourPointDiscountOptions,
   downloadGroupTourReferralItinerary,
   downloadGroupTourConfirmItinerary,
   downloadFixedTourReferralItinerary,
   downloadFixedTourConfirmItinerary,
+  getCountries,
+  getStatesByCountry,
+  getDestinationsByCountryAndState,
+  getTripsByLocation,
+  getTripDetails,
+  getTripVehiclesForDate,
+  getAddonTripVehiclesForDate,
+  getTripFoodsForDate,
+  getActivitiesPricingForDate,
+  getAccommodationsPricingForDate,
+  getCustomTourPointDiscountOptions,
   downloadCustomTourReferralItinerary,
-  downloadCustomTourConfirmItinerary
+  downloadCustomTourConfirmItinerary,
+  getDestinationsForClientCompany,
 } from "../controllers/executiveController.js";
 
 const router = express.Router();
@@ -35,7 +52,7 @@ router.post(
   updateExecutiveNotAnsweredStatus
 );
 router.post(
-  "/not-reachable-status-updation",    // 👈 NEW
+  "/not-reachable-status-updation",    
   verifyUser,
   updateExecutiveNotReachableStatus
 );
@@ -44,11 +61,35 @@ router.post(
   verifyUser,
   updateExecutiveNotInterestedStatus
 );
+router.post(
+  "/interested-status-updation",
+  verifyUser,
+  updateExecutiveInterestedStatus
+);
 
 router.get("/client-group-tours", verifyUser, getClientGroupTours);
-
+router.get(
+  "/group-tour-preview",
+  verifyUser,
+  getExecutiveGroupTourPreview
+);
+router.get(
+  "/group-tour-point-discount-options",
+  verifyUser,
+  getExecutiveGroupTourPointDiscountOptions
+);
 
 router.get("/client-fixed-tours", verifyUser, getClientFixedTours);
+router.get(
+  "/fixed-tour-preview",
+  verifyUser,
+  getExecutiveFixedTourPreview
+);
+router.get(
+  "/fixed-tour-point-discount-options",
+  verifyUser,
+  getFixedTourPointDiscountOptions
+);
 router.post(
   "/group-tour-referral-itinerary",
   verifyUser,
@@ -72,6 +113,31 @@ router.post(
   verifyUser,
   downloadFixedTourConfirmItinerary
 );
+router.get("/countries", verifyUser, getCountries);
+router.get("/states/:countryId", verifyUser, getStatesByCountry);
+router.get(
+  "/destinationsByCountryAndState/:countryId/:stateId",
+  verifyUser,
+  getDestinationsByCountryAndState
+);
+router.get(
+  "/tripsByLocation/:countryId/:stateId/:destinationId",
+  verifyUser,
+  getTripsByLocation
+);
+router.get("/tripDetails/:tripId", verifyUser, getTripDetails);
+
+// pricing
+router.get("/tripVehicles/:tripId", verifyUser, getTripVehiclesForDate);
+router.get("/addonTripVehicles/:addonTripId", verifyUser, getAddonTripVehiclesForDate);
+router.get("/tripFoods/:tripId", verifyUser, getTripFoodsForDate);
+router.get("/activitiesPricing", verifyUser, getActivitiesPricingForDate);
+router.get("/accommodationsPricing", verifyUser, getAccommodationsPricingForDate);
+router.get(
+  "/custom-tour-point-discount-options",
+  verifyUser, // or verifyExecutive (use same middleware you use for other executive endpoints)
+  getCustomTourPointDiscountOptions
+);
 router.post(
   "/custom-tour-referral-itinerary",
   verifyUser,
@@ -82,6 +148,11 @@ router.post(
   "/custom-tour-confirm-itinerary",
   verifyUser,
   downloadCustomTourConfirmItinerary
+);
+router.get(
+  "/client-destinations/:clientId",
+  verifyUser,
+  getDestinationsForClientCompany
 );
 
 

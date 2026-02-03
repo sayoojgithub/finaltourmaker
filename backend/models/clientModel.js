@@ -18,6 +18,15 @@ const CampaignRefSchema = new mongoose.Schema({
   label: { type: String },
 });
 
+const ConfirmedTourSchema = new mongoose.Schema(
+  {
+    tourId: { type: mongoose.Schema.Types.ObjectId, ref: "GroupTour", default: null },
+    tourName: { type: String, trim: true, default: "" },
+    startDate: { type: Date, default: null },
+  },
+  { _id: false }
+);
+
 const ClientSchema = new mongoose.Schema(
   {
     clientId: { type: String, required: true, trim: true },
@@ -107,6 +116,22 @@ const ClientSchema = new mongoose.Schema(
       type: [mongoose.Schema.Types.Mixed], // <--- changed
       default: [],
     },
+    confirmedTourType: { type: String, trim: true, default: "" },
+    confirmedTour: { type: ConfirmedTourSchema, default: null },
+    tourConfirmedDate: { type: Date, default: null },
+    tourStartDate: { type: Date, default: null },
+    tourEndDate: { type: Date, default: null },
+    tourCost: { type: Number, min: 0, default: 0 },
+    discount: { type: Number, min: 0, default: 0 },
+    additionalItemsCost: { type: Number, min: 0, default: 0 },
+    totalAmountToBePaid: { type: Number, min: 0, default: 0 },
+    totalAmountPaid: { type: Number, min: 0, default: 0 },
+    balance: { type: Number, min: 0, default: 0 },
+    paymentCode: { type: String, trim: true, unique: true, sparse: true, index: true },
+    paymentOtpHash: { type: String, trim: true, default: "" },
+paymentOtpExpiresAt: { type: Date, default: null },
+paymentOtpVerifiedAt: { type: Date, default: null },
+paymentOtpLastSentAt: { type: Date, default: null },
   },
   {
     timestamps: true,

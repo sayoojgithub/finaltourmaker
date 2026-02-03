@@ -259,16 +259,28 @@ const handleCustomTourCompleted = () => {
       }
     }
 
+    // if (currentKey === "interested") {
+    //   if (opt.id === "book_tomorrow" || opt.id === "hold") {
+    //     setPath([...path, opt.id]);
+    //     return;
+    //   }
+    //   if (opt.id === "change") {
+    //     setPath([...path, opt.id]);
+    //     return;
+    //   }
+    // }
     if (currentKey === "interested") {
-      if (opt.id === "book_tomorrow" || opt.id === "hold") {
-        setPath([...path, opt.id]);
-        return;
-      }
-      if (opt.id === "change") {
-        setPath([...path, opt.id]);
-        return;
-      }
-    }
+  if (opt.id === "book_tomorrow" || opt.id === "hold") {
+    setPath([...path, opt.id]);
+    setCompleted(true); // ✅ open FollowupScheduler immediately
+    return;
+  }
+  if (opt.id === "change") {
+    setPath([...path, opt.id]);
+    return;
+  }
+}
+
 
     if (currentKey === "change") {
       if (opt.id === "itinerary_change" || opt.id === "price_change") {
@@ -276,16 +288,20 @@ const handleCustomTourCompleted = () => {
         setCompleted(true);
         return;
       }
-      if (opt.id === "destination_change") {
-        onEditClient?.(client, { what: "destination" });
-        setCompleted(true);
-        return;
-      }
-      if (opt.id === "date_change") {
-        onEditClient?.(client, { what: "date" });
-        setCompleted(true);
-        return;
-      }
+      // if (opt.id === "destination_change") {
+      //   onEditClient?.(client, { what: "destination" });
+      //   setCompleted(true);
+      //   return;
+      // }
+      // if (opt.id === "date_change") {
+      //   onEditClient?.(client, { what: "date" });
+      //   setCompleted(true);
+      //   return;
+      // }
+      if (opt.id === "destination_change" || opt.id === "date_change") {
+  setPath([...path, opt.id]);   // ✅ go next step (destination_change / date_change)
+  return;                       // ❌ don't complete yet
+}
     }
 
     if (

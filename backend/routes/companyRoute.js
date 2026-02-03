@@ -27,7 +27,9 @@ import {
   listCompanyFranchisees,
   getAssignedPincodes,
   assignPincodes,
-  removePincodes
+  removePincodes,
+  listExecutivesForPercentage,
+  updateExecutivePercentage
 } from "../controllers/companyController.js";
 
 const router = express.Router();
@@ -61,7 +63,11 @@ router.get("/franchisees", verifyUser, listCompanyFranchisees);
 router.get("/:type/:id", verifyUser, getAssignedPincodes); // type = branch|franchisee
 router.post("/:type/:id/assign", verifyUser, assignPincodes);
 router.post("/:type/:id/remove", verifyUser, removePincodes);
+//percentage management of executives//
+// ✅ List (pagination + filters)
+router.get("/executives", verifyUser, listExecutivesForPercentage);
 
-
+// ✅ Update incentives
+router.put("/executives/:id/incentives", verifyUser, updateExecutivePercentage);
 
 export default router;

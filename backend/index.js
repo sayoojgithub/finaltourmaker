@@ -258,6 +258,7 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 
 // routes...
+
 import adminRoute from "./routes/adminRoute.js";
 import authRoute from "./routes/authRoute.js";
 import salesExecutiveRoute from "./routes/salesExecutiveRoute.js";
@@ -271,6 +272,8 @@ import entryStaffRoute from "./routes/entryStaffRoute.js";
 import frontOfficeRoute from "./routes/frontOfficerRoute.js";
 import frontOfficerManagerRoute from "./routes/frontOfficerManagerRoute.js";
 import executiveRoute from "./routes/executiveRoute.js"
+import uploadRoute from "./routes/uploadRoute.js";
+import paymentRoute from "./routes/paymentRoute.js";
 
 import FrontOfficer from "./models/frontOfficerModel.js"; // 👈 needed in cron
 import jwt from "jsonwebtoken";
@@ -282,8 +285,8 @@ const app = express();
 const server = http.createServer(app);
 
 // 🔐 Allow your Vite dev origin
- const corsOptions = { origin: "http://localhost:5173", credentials: true };
-// const corsOptions = { origin: "http://192.168.1.38:5173", credentials: true };
+  //  const corsOptions = { origin: "http://localhost:5173", credentials: true };
+ const corsOptions = { origin: "http://192.168.31.89:5173", credentials: true };
 const io = new Server(server, {
   cors: corsOptions,
 });
@@ -346,8 +349,13 @@ const connectDB = async () => {
   }
 };
 
+
+
+
 // middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+ 
 app.use(cookieParser());
 app.use(cors(corsOptions));
 
@@ -365,6 +373,8 @@ app.use("/api/v1/entry", entryStaffRoute);
 app.use("/api/v1/frontoffice", frontOfficeRoute);
 app.use("/api/v1/frontOfficerManager", frontOfficerManagerRoute);
 app.use("/api/v1/executive",executiveRoute)
+app.use("/api/v1/upload", uploadRoute);
+app.use("/api/v1/payments", paymentRoute);
 
 /* ---------------- CRON: force logout idle frontofficers ----------------
    Rule: if (now - max(lastActivityAt, lastClientCreatedAt, lastLoginAt)) >= 30min
@@ -417,11 +427,11 @@ cron.schedule("*/2 * * * *", async () => {
 });
 
 const port = process.env.PORT || 8000;
-server.listen(port, () => {
-  connectDB();
-  console.log("server is running on port " + port);
-});
-// server.listen(port,'0.0.0.0', () => {
+// server.listen(port, () => {
 //   connectDB();
 //   console.log("server is running on port " + port);
 // });
+server.listen(port,'0.0.0.0', () => {
+  connectDB();
+  console.log("server is running on port " + port);
+});

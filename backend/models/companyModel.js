@@ -1,5 +1,10 @@
 import mongoose from "mongoose";
-
+const TermsPointSchema = new mongoose.Schema(
+  {
+    text: { type: String, trim: true, default: "" },
+  },
+  { _id: true }
+);
 const companySchema = new mongoose.Schema({
   companyName: {
     type: String,
@@ -65,11 +70,15 @@ const companySchema = new mongoose.Schema({
     type: String, 
     default: '',  
   },
-  terms: {
-  itineraryTerms: { type: String, default: "" },
-  invoiceTerms: { type: String, default: "" },
-  voucherTerms: { type: String, default: "" },
-},
+   terms: {
+    itineraryTerms: { type: [TermsPointSchema], default: [] },
+    invoiceTerms: { type: [TermsPointSchema], default: [] },
+    voucherTerms: { type: [TermsPointSchema], default: [] },
+
+    // ✅ NEW
+    paymentPolicy: { type: [TermsPointSchema], default: [] },
+    cancellationPolicy: { type: [TermsPointSchema], default: [] },
+  },
    salesExecutive: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "SalesExecutive",

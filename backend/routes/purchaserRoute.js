@@ -9,6 +9,9 @@ import {
   updateDestinationStatus,
   getDestinations,
   getDestinationsByCountryAndState,
+  getDestinationsForSelect,
+  getDestinationImages,
+  updateDestinationImages,
   createVendor,
   updateVendor,
   getVendorsPaginated,
@@ -21,6 +24,7 @@ import {
   createAccommodation,
   getAccommodations,
   updateAccommodation,
+  updateAccommodationStatus,
   getVehiclesForTrip,
   createTrip,
   getTrips,
@@ -41,14 +45,19 @@ import {
   getGroupTours,
   getGroupTourById,
   saveGroupTourBO,
+  deleteGroupTour,
   updateGroupTour,
+  updateGroupTourActiveStatus,
   getTripVehiclesForDate,
   getTripFoodsForDate,
   getAddonTripVehiclesForDate,
   getActivitiesPricingForDate,
   getAccommodationsPricingForDate,
+  getVendorsByDestinationForFixedTour,
+  getAccommodationsByFilter,
   createFixedTour,
   getFixedTours,
+  getFixedTourById,
   updateFixedTour,
   updateVehicleStatus,
   getVendorsOfFoodsByLocation,
@@ -67,6 +76,25 @@ router.get("/states/:countryId", verifyUser, getStatesByCountry);
 router.post("/destination", verifyUser, createDestination);
 router.get("/destinations", verifyUser, getDestinations);
 router.patch("/updateDestinationStatus/:id/status",verifyUser, updateDestinationStatus);
+//destination image management//
+router.get(
+  "/destinationsForSelect",
+  verifyUser,
+  getDestinationsForSelect
+);
+
+router.get(
+  "/destinationImages/:destinationId",
+  verifyUser,
+  getDestinationImages
+);
+
+router.put(
+  "/destinationImages/:destinationId",
+  verifyUser,
+  updateDestinationImages
+);
+
 router.get("/destinationsByCountryAndState/:countryId/:stateId",verifyUser,getDestinationsByCountryAndState);
 router.post("/vendor", verifyUser, createVendor);
 router.put("/vendor/:id", verifyUser, updateVendor);
@@ -81,6 +109,7 @@ router.get("/vendorsOfHotels/:countryId/:stateId/:destinationId",verifyUser,getV
 router.post("/createAccommodation", verifyUser, createAccommodation);
 router.get('/accommodations', verifyUser, getAccommodations);
 router.put("/updateAccommodation/:id", verifyUser, updateAccommodation);
+router.patch("/updateAccommodationStatus/:id/status", verifyUser, updateAccommodationStatus);
 router.get("/vehiclesForTrip/:country/:state/:destination/:vendor",verifyUser,getVehiclesForTrip);
 router.post("/createTrip", verifyUser, createTrip);
 router.get("/trips", verifyUser, getTrips);
@@ -102,15 +131,29 @@ router.post("/createGroupTour", verifyUser, createGroupTour);
 router.get("/groupTours", verifyUser, getGroupTours);
 router.get("/groupTours/:id", verifyUser, getGroupTourById);
 router.put("/groupTours/:id/bo", verifyUser, saveGroupTourBO);
+router.delete("/groupTours/:id", verifyUser, deleteGroupTour);
 router.put("/updateGroupTour/:id", verifyUser, updateGroupTour);
+router.put("/groupTours/:id/activeStatus", verifyUser, updateGroupTourActiveStatus);
+
 router.get("/tripVehicles/:tripId", verifyUser, getTripVehiclesForDate);
 router.get("/tripFoods/:tripId", verifyUser, getTripFoodsForDate)
 router.get("/addonTripVehicles/:addonTripId", verifyUser, getAddonTripVehiclesForDate); 
 router.get("/activitiesPricing", verifyUser, getActivitiesPricingForDate);
 router.get("/accommodationsPricing", verifyUser, getAccommodationsPricingForDate);
 //fixedTour creation updation cost calculation//
+router.get(
+  "/vendorsByDestinationForFixedTour/:destinationId",
+  verifyUser,
+  getVendorsByDestinationForFixedTour
+);
+router.get(
+  "/accommodationsByFilter/:destinationId",
+  verifyUser,
+  getAccommodationsByFilter
+);
 router.post("/createFixedTour", verifyUser, createFixedTour);
 router.get("/fixedTours", verifyUser, getFixedTours);
+router.get("/fixedTours/:id", verifyUser, getFixedTourById);
 router.put("/updateFixedTour/:id", verifyUser, updateFixedTour);
 router.get("/vendorsOfFoods/:countryId/:stateId/:destinationId",verifyUser,getVendorsOfFoodsByLocation);
 router.post("/createFood", verifyUser, createFood);
