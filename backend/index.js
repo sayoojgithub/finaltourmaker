@@ -340,7 +340,7 @@ io.on("connection", (socket) => {
 
 // app.get("/", (req, res) => {
 //   res.send("API IS WORKING");
-// });
+// }); 
 
 mongoose.set("strictQuery", false);
 const connectDB = async () => {
