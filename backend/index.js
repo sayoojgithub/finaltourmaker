@@ -278,6 +278,12 @@ import paymentRoute from "./routes/paymentRoute.js";
 import FrontOfficer from "./models/frontOfficerModel.js"; // 👈 needed in cron
 import jwt from "jsonwebtoken";
 import cron from "node-cron";
+import path from 'path';
+import { fileURLToPath } from "url";
+
+//For ESM __dirname
+const __filename = fileURLToPath(import.meta.url);
+const _dirname = path.dirname(__filename); // Fixed: removed asterisks
 
 dotenv.config();
 
@@ -285,8 +291,8 @@ const app = express();
 const server = http.createServer(app);
 
 // 🔐 Allow your Vite dev origin
-  //  const corsOptions = { origin: "http://localhost:5173", credentials: true };
- const corsOptions = { origin: "http://192.168.31.89:5173", credentials: true };
+    const corsOptions = { origin: "http://localhost:5173", credentials: true };
+//  const corsOptions = { origin: "http://192.168.31.89:5173", credentials: true };
 const io = new Server(server, {
   cors: corsOptions,
 });
@@ -332,9 +338,9 @@ io.on("connection", (socket) => {
   });
 });
 
-app.get("/", (req, res) => {
-  res.send("API IS WORKING");
-});
+// app.get("/", (req, res) => {
+//   res.send("API IS WORKING");
+// });
 
 mongoose.set("strictQuery", false);
 const connectDB = async () => {
@@ -425,13 +431,26 @@ cron.schedule("*/2 * * * *", async () => {
   }
   if (updates.length) await Promise.all(updates);
 });
+if (process.env.NODE_ENV === 'production') {
+    const parentDir = path.join(_dirname, '..'); // project root (../)
+    const distPath = path.join(parentDir, 'frontend', 'dist');
+    app.use(express.static(distPath));
+    
+    // Fixed: Use wildcard (*) instead of regex pattern for Express 5.x
+    // app.get('*', (req, res) => {
+    //     res.sendFile(path.join(distPath, 'index.html'));
+    // });
+} else {
+    app.get('/', (req, res) => res.send('Server is Ready'));
+}
+
 
 const port = process.env.PORT || 8000;
-// server.listen(port, () => {
-//   connectDB();
-//   console.log("server is running on port " + port);
-// });
-server.listen(port,'0.0.0.0', () => {
+server.listen(port, () => {
   connectDB();
   console.log("server is running on port " + port);
 });
+// server.listen(port,'0.0.0.0', () => {
+//   connectDB();
+//   console.log("server is running on port " + port);
+// });

@@ -1,25 +1,25 @@
-// import { defineConfig } from 'vite'
-// import react from '@vitejs/plugin-react'
-// import tailwindcss from '@tailwindcss/vite'
-// // https://vite.dev/config/
-// export default defineConfig({
-//   plugins: [react(),tailwindcss(),
-// ],
-// })
-
-
-
- import { defineConfig } from 'vite'
+import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
-
-
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(),tailwindcss(),
 ],
-server: {
-    host: '0.0.0.0', // Exposes the server to all IP addresses
-    port: 5173,       // Port for the frontend
-  }
 })
+
+
+
+//  import { defineConfig } from 'vite'
+// import react from '@vitejs/plugin-react'
+// import tailwindcss from '@tailwindcss/vite'
+
+
+// // https://vite.dev/config/
+// export default defineConfig({
+//   plugins: [react(),tailwindcss(),
+// ],
+// server: {
+//     host: '0.0.0.0', // Exposes the server to all IP addresses
+//     port: 5173,       // Port for the frontend
+//   }
+// })

@@ -550,7 +550,7 @@ console.log(callbackUrl,"callbackUrl23")
       console.log(keys,"keys29")
       const base = keys.map((k) => `${encodeURIComponent(k)}=${encodeURIComponent(asClean(copy[k]))}`).join("&");
       console.log(base,"base30")
-      const computed = crypto.createHmac("sha256", responseKey).update(base).digest("hex");
+      const computed = crypto.createHmac("sha256", responseKey).update(base).digest("base64");
       console.log(computed,"computed31")
       // Some setups require percent-decoding signature once before compare (docs mention this). :contentReference[oaicite:8]{index=8}
       const sigDecoded = decodeURIComponent(signature);
